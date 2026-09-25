@@ -2,1022 +2,375 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>MHT-CET 2027 Practice Test</title>
+  <title>MHT-CET 2027 Practice Portal</title>
 
-    <style>
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f4f6fb;
-            color: #222;
-        }
-
-        /* HEADER */
-
-        header {
-            background: #173b7a;
-            color: white;
-            padding: 18px 35px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        header h2 {
-            margin: 0;
-        }
-
-        .header-right {
-            font-size: 14px;
-        }
-
-        /* HOME */
-
-        .home {
-            max-width: 900px;
-            margin: 60px auto;
-            padding: 20px;
-            text-align: center;
-        }
-
-        .home h1 {
-            font-size: 42px;
-            color: #173b7a;
-        }
-
-        .home p {
-            font-size: 18px;
-            color: #555;
-        }
-
-        .subject-container {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            flex-wrap: wrap;
-            margin: 40px 0;
-        }
-
-        .subject {
-            background: white;
-            width: 220px;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-        }
-
-        .subject h3 {
-            color: #173b7a;
-        }
-
-        .main-btn {
-            background: #ff6b35;
-            color: white;
-            border: none;
-            padding: 15px 35px;
-            border-radius: 8px;
-            font-size: 18px;
-            cursor: pointer;
-        }
-
-        .main-btn:hover {
-            background: #e95724;
-        }
-
-        /* INSTRUCTIONS */
-
-        .instructions {
-            max-width: 700px;
-            margin: 50px auto;
-            background: white;
-            padding: 35px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-        }
-
-        .instructions h1 {
-            color: #173b7a;
-        }
-
-        .instructions li {
-            margin: 15px 0;
-        }
-
-        /* EXAM */
-
-        .exam {
-            max-width: 1100px;
-            margin: 30px auto;
-            padding: 20px;
-        }
-
-        .exam-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: white;
-            padding: 18px 25px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-
-        .timer {
-            background: #d62828;
-            color: white;
-            padding: 10px 18px;
-            border-radius: 7px;
-            font-weight: bold;
-            font-size: 18px;
-        }
-
-        .exam-layout {
-            display: grid;
-            grid-template-columns: 1fr 250px;
-            gap: 20px;
-        }
-
-        .question-box {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            min-height: 400px;
-        }
-
-        .subject-label {
-            display: inline-block;
-            background: #e8efff;
-            color: #173b7a;
-            padding: 7px 12px;
-            border-radius: 6px;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-
-        .question {
-            font-size: 22px;
-            line-height: 1.5;
-            margin-bottom: 25px;
-        }
-
-        .option {
-            display: block;
-            background: #f5f6f8;
-            padding: 15px;
-            margin: 12px 0;
-            border-radius: 8px;
-            cursor: pointer;
-            border: 2px solid transparent;
-        }
-
-        .option:hover {
-            border-color: #173b7a;
-        }
-
-        .option input {
-            margin-right: 10px;
-        }
-
-        .navigation {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 30px;
-        }
-
-        .nav-btn {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 7px;
-            background: #173b7a;
-            color: white;
-            cursor: pointer;
-        }
-
-        .nav-btn:disabled {
-            background: #aaa;
-            cursor: not-allowed;
-        }
-
-        /* QUESTION NAVIGATION */
-
-        .question-nav {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-        }
-
-        .question-nav h3 {
-            margin-top: 0;
-        }
-
-        .number-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-        }
-
-        .number-btn {
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background: #e1e4ea;
-        }
-
-        .number-btn.current {
-            background: #173b7a;
-            color: white;
-        }
-
-        .number-btn.answered {
-            background: #38a169;
-            color: white;
-        }
-
-        .submit-btn {
-            width: 100%;
-            margin-top: 25px;
-            padding: 13px;
-            border: none;
-            border-radius: 7px;
-            background: #d62828;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        /* RESULT */
-
-        .result {
-            max-width: 850px;
-            margin: 50px auto;
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            text-align: center;
-        }
-
-        .result h1 {
-            color: #173b7a;
-        }
-
-        .score {
-            font-size: 40px;
-            font-weight: bold;
-            margin: 20px;
-        }
-
-        .review {
-            text-align: left;
-            margin-top: 30px;
-        }
-
-        .review-item {
-            padding: 18px;
-            margin: 12px 0;
-            border-radius: 8px;
-        }
-
-        .correct {
-            background: #d9f7df;
-            border-left: 5px solid #2f9e44;
-        }
-
-        .wrong {
-            background: #ffe0e0;
-            border-left: 5px solid #d62828;
-        }
-
-        .unanswered {
-            background: #eeeeee;
-            border-left: 5px solid #777;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        footer {
-            text-align: center;
-            padding: 25px;
-            color: #666;
-            font-size: 13px;
-        }
-
-        /* MOBILE */
-
-        @media (max-width: 750px) {
-
-            header {
-                padding: 15px;
-            }
-
-            .home h1 {
-                font-size: 30px;
-            }
-
-            .exam-layout {
-                grid-template-columns: 1fr;
-            }
-
-            .question {
-                font-size: 19px;
-            }
-
-            .exam-top {
-                flex-direction: column;
-                gap: 15px;
-            }
-
-        }
-
-    </style>
+  <!-- Our separate CSS file -->
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<header>
+  <!-- ================= HOME ================= -->
 
-    <h2>MHT-CET 2027</h2>
+  <section id="home">
 
-    <div class="header-right">
-        Unofficial Practice Portal
-    </div>
+    <header class="header">
+      <div class="logo">
+        MHT-CET <span>2027</span>
+      </div>
 
-</header>
+      <div>
+        <button class="btn" onclick="showInstructions()">
+          How It Works
+        </button>
+      </div>
+    </header>
+
+    <main class="container">
+
+      <div class="card">
+
+        <h1>MHT-CET 2027 Practice Portal</h1>
+
+        <p style="margin: 15px 0;">
+          Practice Physics, Chemistry and Mathematics
+          with MHT-CET style questions.
+        </p>
+
+        <button class="btn" onclick="showInstructions()">
+          Start Practice
+        </button>
+
+      </div>
 
 
-<!-- HOME PAGE -->
+      <!-- Dashboard Preview -->
 
-<section id="homePage" class="home">
+      <h2 style="margin-bottom: 15px;">
+        Your Progress
+      </h2>
 
-    <h1>MHT-CET 2027 Practice Test</h1>
+      <div class="dashboard-grid">
 
-    <p>
-        Practice Physics, Chemistry and Mathematics
-        with this unofficial mock test.
-    </p>
-
-    <div class="subject-container">
-
-        <div class="subject">
-            <h3>⚡ Physics</h3>
-            <p>Practice Physics MCQs</p>
+        <div class="stat-card">
+          <h3>Questions Attempted</h3>
+          <p>0</p>
         </div>
 
-        <div class="subject">
-            <h3>🧪 Chemistry</h3>
-            <p>Practice Chemistry MCQs</p>
+        <div class="stat-card">
+          <h3>Tests Completed</h3>
+          <p>0</p>
         </div>
 
-        <div class="subject">
-            <h3>📐 Mathematics</h3>
-            <p>Practice Mathematics MCQs</p>
+        <div class="stat-card">
+          <h3>Accuracy</h3>
+          <p>0%</p>
         </div>
 
-    </div>
-
-    <button class="main-btn" onclick="showInstructions()">
-        Start Practice Test
-    </button>
-
-</section>
-
-
-<!-- INSTRUCTIONS -->
-
-<section id="instructionPage" class="instructions hidden">
-
-    <h1>Test Instructions</h1>
-
-    <ul>
-
-        <li>Total Questions: <b>10</b></li>
-
-        <li>Subjects: <b>Physics, Chemistry and Mathematics</b></li>
-
-        <li>Each question has 4 options.</li>
-
-        <li>Total Time: <b>20 minutes</b></li>
-
-        <li>Select one answer for each question.</li>
-
-        <li>You can move between questions using Next and Previous.</li>
-
-        <li>You can also use the question number buttons.</li>
-
-        <li>Your score will be shown after submission.</li>
-
-    </ul>
-
-    <br>
-
-    <button class="main-btn" onclick="startExam()">
-        Start Exam
-    </button>
-
-</section>
-
-
-<!-- EXAM -->
-
-<section id="examPage" class="exam hidden">
-
-    <div class="exam-top">
-
-        <div>
-            Question <span id="questionNumber">1</span> of 10
+        <div class="stat-card">
+          <h3>Study Streak</h3>
+          <p>0 Days</p>
         </div>
 
-        <div class="timer">
-            Time Left: <span id="timer">20:00</span>
+      </div>
+
+
+      <!-- Subjects -->
+
+      <h2 style="margin: 30px 0 15px;">
+        Practice Subjects
+      </h2>
+
+      <div class="subject-grid">
+
+        <div class="subject-card">
+          <h2>⚡ Physics</h2>
+          <p>Practice Physics chapters and questions.</p>
         </div>
 
-    </div>
+        <div class="subject-card">
+          <h2>🧪 Chemistry</h2>
+          <p>Practice Chemistry chapters and questions.</p>
+        </div>
+
+        <div class="subject-card">
+          <h2>📐 Mathematics</h2>
+          <p>Practice Mathematics chapters and questions.</p>
+        </div>
+
+      </div>
 
 
-    <div class="exam-layout">
+      <div class="card" style="margin-top: 25px;">
 
-        <div class="question-box">
+        <h2>📝 Mock Tests</h2>
 
-            <div id="subjectLabel" class="subject-label">
-                Physics
-            </div>
+        <p style="margin: 10px 0 15px;">
+          Take timed MHT-CET style practice tests.
+        </p>
 
-            <div id="questionText" class="question">
-                Question
-            </div>
+        <button class="btn" onclick="showInstructions()">
+          Take Mock Test
+        </button>
 
-            <div id="optionsContainer"></div>
+      </div>
+
+    </main>
+
+  </section>
 
 
-            <div class="navigation">
 
-                <button id="previousBtn"
-                        class="nav-btn"
-                        onclick="previousQuestion()">
-                    ← Previous
-                </button>
+  <!-- ================= INSTRUCTIONS ================= -->
 
-                <button id="nextBtn"
-                        class="nav-btn"
-                        onclick="nextQuestion()">
-                    Next →
-                </button>
+  <section id="instructions" style="display:none;">
 
-            </div>
+    <header class="header">
+      <div class="logo">
+        MHT-CET <span>2027</span>
+      </div>
+    </header>
+
+    <main class="container">
+
+      <div class="card">
+
+        <h1>Practice Test Instructions</h1>
+
+        <br>
+
+        <p>✅ Total Questions: 10</p>
+
+        <p>⏱️ Time: 20 Minutes</p>
+
+        <p>📚 Subjects: Physics, Chemistry & Mathematics</p>
+
+        <p>📝 Each question has four options.</p>
+
+        <p>📊 Your score will be shown after submission.</p>
+
+        <br>
+
+        <p>
+          This is an unofficial practice portal for
+          educational purposes.
+        </p>
+
+        <br>
+
+        <button class="btn" onclick="startExam()">
+          Start Test
+        </button>
+
+        <button
+          class="btn"
+          style="margin-left:10px;"
+          onclick="goHome()">
+          Back
+        </button>
+
+      </div>
+
+    </main>
+
+  </section>
+
+
+
+  <!-- ================= EXAM ================= -->
+
+  <section id="exam" style="display:none;">
+
+    <header class="header">
+
+      <div class="logo">
+        MHT-CET <span>2027</span>
+      </div>
+
+      <div>
+        ⏱️ Time:
+        <strong id="timer">20:00</strong>
+      </div>
+
+    </header>
+
+
+    <main class="container">
+
+      <div class="card">
+
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          margin-bottom:20px;
+        ">
+
+          <strong id="questionNumber">
+            Question 1
+          </strong>
+
+          <strong id="subjectName">
+            Physics
+          </strong>
 
         </div>
 
 
-        <div class="question-nav">
+        <h2 id="questionText">
+          Question will appear here
+        </h2>
 
-            <h3>Questions</h3>
 
-            <div id="numberGrid" class="number-grid"></div>
+        <div
+          id="options"
+          style="margin-top:20px;">
+        </div>
 
-            <button class="submit-btn" onclick="submitTest()">
-                Submit Test
-            </button>
+
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          margin-top:25px;
+        ">
+
+          <button
+            class="btn"
+            onclick="previousQuestion()">
+            ← Previous
+          </button>
+
+          <button
+            class="btn"
+            onclick="nextQuestion()">
+            Next →
+          </button>
 
         </div>
 
-    </div>
-
-</section>
+      </div>
 
 
-<!-- RESULT -->
 
-<section id="resultPage" class="result hidden">
+      <!-- Question Navigation -->
 
-    <h1>Test Completed 🎉</h1>
+      <div class="card">
 
-    <p>Your Score</p>
+        <h3>Questions</h3>
 
-    <div id="score" class="score">
-        0 / 10
-    </div>
+        <div
+          id="questionNumbers"
+          style="
+            display:flex;
+            flex-wrap:wrap;
+            gap:8px;
+            margin-top:15px;
+          ">
+        </div>
 
-    <p id="percentage"></p>
+        <br>
 
-    <div class="review">
+        <button
+          class="btn"
+          onclick="submitTest()">
+          Submit Test
+        </button>
+
+      </div>
+
+    </main>
+
+  </section>
+
+
+
+  <!-- ================= RESULT ================= -->
+
+  <section id="result" style="display:none;">
+
+    <header class="header">
+
+      <div class="logo">
+        MHT-CET <span>2027</span>
+      </div>
+
+    </header>
+
+
+    <main class="container">
+
+      <div class="card">
+
+        <h1>🎉 Test Completed!</h1>
+
+        <br>
+
+        <h2>
+          Score:
+          <span id="score">0 / 10</span>
+        </h2>
+
+        <br>
+
+        <div class="dashboard-grid">
+
+          <div class="stat-card">
+            <h3>Correct</h3>
+            <p id="correct">0</p>
+          </div>
+
+          <div class="stat-card">
+            <h3>Wrong</h3>
+            <p id="wrong">0</p>
+          </div>
+
+          <div class="stat-card">
+            <h3>Unanswered</h3>
+            <p id="unanswered">0</p>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- Review -->
+
+      <div class="card">
 
         <h2>Answer Review</h2>
 
-        <div id="reviewContainer"></div>
+        <div
+          id="review"
+          style="margin-top:15px;">
+        </div>
 
-    </div>
+      </div>
 
-    <br>
 
-    <button class="main-btn" onclick="location.reload()">
-        Take Test Again
-    </button>
+      <button
+        class="btn"
+        onclick="goHome()">
+        Back to Dashboard
+      </button>
 
-</section>
+    </main>
 
+  </section>
 
-<footer>
 
-    Unofficial MHT-CET Practice Portal.
-    This website is for educational practice only.
 
-</footer>
+  <!-- ================= JAVASCRIPT ================= -->
 
+  <!-- Question bank -->
+  <script src="questions.js"></script>
 
-<script>
-
-
-// QUESTIONS
-// You can replace these questions with your own later.
-
-const questions = [
-
-    {
-        subject: "Physics",
-        question: "What is the SI unit of force?",
-        options: [
-            "Joule",
-            "Newton",
-            "Watt",
-            "Pascal"
-        ],
-        answer: 1
-    },
-
-    {
-        subject: "Physics",
-        question: "Which quantity has both magnitude and direction?",
-        options: [
-            "Speed",
-            "Distance",
-            "Velocity",
-            "Time"
-        ],
-        answer: 2
-    },
-
-    {
-        subject: "Physics",
-        question: "What is the approximate acceleration due to gravity on Earth?",
-        options: [
-            "5.8 m/s²",
-            "9.8 m/s²",
-            "15.2 m/s²",
-            "20.5 m/s²"
-        ],
-        answer: 1
-    },
-
-    {
-        subject: "Chemistry",
-        question: "What is the chemical symbol for sodium?",
-        options: [
-            "So",
-            "S",
-            "Na",
-            "N"
-        ],
-        answer: 2
-    },
-
-    {
-        subject: "Chemistry",
-        question: "What is the pH of a neutral solution at 25°C?",
-        options: [
-            "0",
-            "5",
-            "7",
-            "14"
-        ],
-        answer: 2
-    },
-
-    {
-        subject: "Chemistry",
-        question: "Which gas is most abundant in Earth's atmosphere?",
-        options: [
-            "Oxygen",
-            "Nitrogen",
-            "Carbon dioxide",
-            "Hydrogen"
-        ],
-        answer: 1
-    },
-
-    {
-        subject: "Mathematics",
-        question: "What is the derivative of x²?",
-        options: [
-            "x",
-            "2x",
-            "x²",
-            "2"
-        ],
-        answer: 1
-    },
-
-    {
-        subject: "Mathematics",
-        question: "What is the value of sin 90°?",
-        options: [
-            "0",
-            "1",
-            "-1",
-            "1/2"
-        ],
-        answer: 1
-    },
-
-    {
-        subject: "Mathematics",
-        question: "What is 5² + 3²?",
-        options: [
-            "25",
-            "30",
-            "34",
-            "40"
-        ],
-        answer: 2
-    },
-
-    {
-        subject: "Mathematics",
-        question: "What is the value of √144?",
-        options: [
-            "10",
-            "11",
-            "12",
-            "14"
-        ],
-        answer: 2
-    }
-
-];
-
-
-let currentQuestion = 0;
-
-let userAnswers = new Array(questions.length).fill(null);
-
-let timeLeft = 20 * 60;
-
-let timerInterval;
-
-
-// SHOW INSTRUCTIONS
-
-function showInstructions() {
-
-    document.getElementById("homePage").classList.add("hidden");
-
-    document.getElementById("instructionPage").classList.remove("hidden");
-
-}
-
-
-// START EXAM
-
-function startExam() {
-
-    document.getElementById("instructionPage").classList.add("hidden");
-
-    document.getElementById("examPage").classList.remove("hidden");
-
-    createNumberButtons();
-
-    showQuestion();
-
-    startTimer();
-
-}
-
-
-// SHOW QUESTION
-
-function showQuestion() {
-
-    const q = questions[currentQuestion];
-
-    document.getElementById("questionNumber").textContent =
-        currentQuestion + 1;
-
-    document.getElementById("subjectLabel").textContent =
-        q.subject;
-
-    document.getElementById("questionText").textContent =
-        q.question;
-
-
-    const optionsContainer =
-        document.getElementById("optionsContainer");
-
-    optionsContainer.innerHTML = "";
-
-
-    q.options.forEach((option, index) => {
-
-        const label = document.createElement("label");
-
-        label.className = "option";
-
-
-        label.innerHTML = `
-            <input
-                type="radio"
-                name="answer"
-                value="${index}"
-                ${userAnswers[currentQuestion] === index ? "checked" : ""}
-            >
-            ${option}
-        `;
-
-
-        label.querySelector("input").addEventListener(
-            "change",
-            function () {
-
-                userAnswers[currentQuestion] = index;
-
-                updateNumberButtons();
-
-            }
-        );
-
-
-        optionsContainer.appendChild(label);
-
-    });
-
-
-    document.getElementById("previousBtn").disabled =
-        currentQuestion === 0;
-
-
-    document.getElementById("nextBtn").disabled =
-        currentQuestion === questions.length - 1;
-
-
-    updateNumberButtons();
-
-}
-
-
-// NEXT
-
-function nextQuestion() {
-
-    if (currentQuestion < questions.length - 1) {
-
-        currentQuestion++;
-
-        showQuestion();
-
-    }
-
-}
-
-
-// PREVIOUS
-
-function previousQuestion() {
-
-    if (currentQuestion > 0) {
-
-        currentQuestion--;
-
-        showQuestion();
-
-    }
-
-}
-
-
-// NUMBER BUTTONS
-
-function createNumberButtons() {
-
-    const grid = document.getElementById("numberGrid");
-
-    grid.innerHTML = "";
-
-
-    questions.forEach((q, index) => {
-
-        const button = document.createElement("button");
-
-        button.textContent = index + 1;
-
-        button.className = "number-btn";
-
-
-        button.onclick = function () {
-
-            currentQuestion = index;
-
-            showQuestion();
-
-        };
-
-
-        grid.appendChild(button);
-
-    });
-
-}
-
-
-function updateNumberButtons() {
-
-    const buttons =
-        document.querySelectorAll(".number-btn");
-
-
-    buttons.forEach((button, index) => {
-
-        button.classList.remove("current");
-        button.classList.remove("answered");
-
-
-        if (index === currentQuestion) {
-
-            button.classList.add("current");
-
-        }
-
-        else if (userAnswers[index] !== null) {
-
-            button.classList.add("answered");
-
-        }
-
-    });
-
-}
-
-
-// TIMER
-
-function startTimer() {
-
-    timerInterval = setInterval(function () {
-
-        timeLeft--;
-
-
-        const minutes =
-            Math.floor(timeLeft / 60);
-
-        const seconds =
-            timeLeft % 60;
-
-
-        document.getElementById("timer").textContent =
-            `${minutes}:${seconds.toString().padStart(2, "0")}`;
-
-
-        if (timeLeft <= 0) {
-
-            clearInterval(timerInterval);
-
-            alert("Time is up! Your test will be submitted.");
-
-            submitTest();
-
-        }
-
-    }, 1000);
-
-}
-
-
-// SUBMIT TEST
-
-function submitTest() {
-
-    clearInterval(timerInterval);
-
-
-    let score = 0;
-
-
-    questions.forEach((q, index) => {
-
-        if (userAnswers[index] === q.answer) {
-
-            score++;
-
-        }
-
-    });
-
-
-    document.getElementById("examPage")
-        .classList.add("hidden");
-
-    document.getElementById("resultPage")
-        .classList.remove("hidden");
-
-
-    document.getElementById("score").textContent =
-        `${score} / ${questions.length}`;
-
-
-    const percentage =
-        Math.round((score / questions.length) * 100);
-
-
-    document.getElementById("percentage").textContent =
-        `Percentage: ${percentage}%`;
-
-
-    showReview();
-
-}
-
-
-// ANSWER REVIEW
-
-function showReview() {
-
-    const container =
-        document.getElementById("reviewContainer");
-
-    container.innerHTML = "";
-
-
-    questions.forEach((q, index) => {
-
-        const div = document.createElement("div");
-
-        const userAnswer =
-            userAnswers[index];
-
-        if (userAnswer === q.answer) {
-
-            div.className = "review-item correct";
-
-            div.innerHTML = `
-                <b>Question ${index + 1}: Correct ✓</b>
-                <p>${q.question}</p>
-                <p>
-                    Your answer:
-                    <b>${q.options[userAnswer]}</b>
-                </p>
-            `;
-
-        }
-
-        else if (userAnswer === null) {
-
-            div.className = "review-item unanswered";
-
-            div.innerHTML = `
-                <b>Question ${index + 1}: Not Answered</b>
-                <p>${q.question}</p>
-                <p>
-                    Correct answer:
-                    <b>${q.options[q.answer]}</b>
-                </p>
-            `;
-
-        }
-
-        else {
-
-            div.className = "review-item wrong";
-
-            div.innerHTML = `
-                <b>Question ${index + 1}: Wrong ✗</b>
-                <p>${q.question}</p>
-                <p>
-                    Your answer:
-                    <b>${q.options[userAnswer]}</b>
-                </p>
-                <p>
-                    Correct answer:
-                    <b>${q.options[q.answer]}</b>
-                </p>
-            `;
-
-        }
-
-
-        container.appendChild(div);
-
-    });
-
-}
-
-</script>
+  <!-- Main application -->
+  <script src="app.js"></script>
 
 </body>
+
 </html>
