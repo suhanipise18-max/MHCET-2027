@@ -7,49 +7,57 @@
 
   <title>MHT-CET 2027 Practice Portal</title>
 
-  <!-- Our separate CSS file -->
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-  <!-- ================= HOME ================= -->
+  <!-- ================= HOME / DASHBOARD ================= -->
 
   <section id="home">
 
     <header class="header">
+
       <div class="logo">
         MHT-CET <span>2027</span>
       </div>
 
       <div>
+        <button class="btn" onclick="showPractice()">
+          📚 Practice
+        </button>
+
         <button class="btn" onclick="showInstructions()">
-          How It Works
+          📝 Mock Test
         </button>
       </div>
+
     </header>
+
 
     <main class="container">
 
+      <!-- Welcome -->
+
       <div class="card">
 
-        <h1>MHT-CET 2027 Practice Portal</h1>
+        <h1>Welcome to MHT-CET 2027</h1>
 
-        <p style="margin: 15px 0;">
+        <p style="margin:15px 0;">
           Practice Physics, Chemistry and Mathematics
-          with MHT-CET style questions.
+          with chapter-wise questions.
         </p>
 
-        <button class="btn" onclick="showInstructions()">
-          Start Practice
+        <button class="btn" onclick="showPractice()">
+          Start Practicing →
         </button>
 
       </div>
 
 
-      <!-- Dashboard Preview -->
+      <!-- Progress -->
 
-      <h2 style="margin-bottom: 15px;">
+      <h2 style="margin-bottom:15px;">
         Your Progress
       </h2>
 
@@ -78,43 +86,248 @@
       </div>
 
 
-      <!-- Subjects -->
+      <!-- Practice -->
 
-      <h2 style="margin: 30px 0 15px;">
-        Practice Subjects
+      <h2 style="margin:30px 0 15px;">
+        📚 Practice by Subject
       </h2>
 
       <div class="subject-grid">
 
-        <div class="subject-card">
+        <div class="subject-card"
+             onclick="showPractice()">
+
           <h2>⚡ Physics</h2>
-          <p>Practice Physics chapters and questions.</p>
+
+          <p>
+            Practice Physics chapter-wise questions.
+          </p>
+
         </div>
 
-        <div class="subject-card">
+
+        <div class="subject-card"
+             onclick="showPractice()">
+
           <h2>🧪 Chemistry</h2>
-          <p>Practice Chemistry chapters and questions.</p>
+
+          <p>
+            Practice Chemistry chapter-wise questions.
+          </p>
+
         </div>
 
-        <div class="subject-card">
+
+        <div class="subject-card"
+             onclick="showPractice()">
+
           <h2>📐 Mathematics</h2>
-          <p>Practice Mathematics chapters and questions.</p>
+
+          <p>
+            Practice Mathematics chapter-wise questions.
+          </p>
+
         </div>
 
       </div>
 
 
-      <div class="card" style="margin-top: 25px;">
+      <!-- Mock Test -->
+
+      <div class="card" style="margin-top:25px;">
 
         <h2>📝 Mock Tests</h2>
 
-        <p style="margin: 10px 0 15px;">
+        <p style="margin:10px 0 15px;">
           Take timed MHT-CET style practice tests.
         </p>
 
         <button class="btn" onclick="showInstructions()">
-          Take Mock Test
+          Take Mock Test →
         </button>
+
+      </div>
+
+    </main>
+
+  </section>
+
+
+
+  <!-- ================= PRACTICE ================= -->
+
+  <section id="practice" style="display:none;">
+
+    <header class="header">
+
+      <div class="logo">
+        MHT-CET <span>2027</span>
+      </div>
+
+      <button class="btn" onclick="goHome()">
+        🏠 Dashboard
+      </button>
+
+    </header>
+
+
+    <main class="container">
+
+      <div class="card">
+
+        <h1>📚 Practice Questions</h1>
+
+        <p style="margin-top:10px;">
+          Choose a subject to start practicing.
+        </p>
+
+      </div>
+
+
+      <!-- Subject Selection -->
+
+      <div id="practiceSubjects">
+
+        <div class="subject-grid">
+
+          <div class="subject-card"
+               onclick="selectSubject('Physics')">
+
+            <h2>⚡ Physics</h2>
+
+            <p>
+              Mechanics, Electricity, Optics and more.
+            </p>
+
+          </div>
+
+
+          <div class="subject-card"
+               onclick="selectSubject('Chemistry')">
+
+            <h2>🧪 Chemistry</h2>
+
+            <p>
+              Physical, Organic and Inorganic Chemistry.
+            </p>
+
+          </div>
+
+
+          <div class="subject-card"
+               onclick="selectSubject('Mathematics')">
+
+            <h2>📐 Mathematics</h2>
+
+            <p>
+              Algebra, Calculus, Trigonometry and more.
+            </p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- Chapter Selection -->
+
+      <div id="chapterSection" style="display:none;">
+
+        <div class="card">
+
+          <button class="btn"
+                  onclick="backToSubjects()">
+            ← Subjects
+          </button>
+
+          <h2 id="selectedSubject"
+              style="margin-top:20px;">
+            Chapters
+          </h2>
+
+          <p style="margin:10px 0 20px;">
+            Select a chapter to practice.
+          </p>
+
+          <div id="chapterList"
+               class="chapter-list">
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- Practice Question -->
+
+      <div id="practiceQuestion"
+           style="display:none;">
+
+        <div class="card">
+
+          <button class="btn"
+                  onclick="backToChapters()">
+            ← Chapters
+          </button>
+
+          <div style="
+            display:flex;
+            justify-content:space-between;
+            margin-top:20px;
+            margin-bottom:20px;
+          ">
+
+            <strong id="practiceQuestionNumber">
+              Question 1
+            </strong>
+
+            <strong id="practiceChapter">
+              Chapter
+            </strong>
+
+          </div>
+
+
+          <h2 id="practiceQuestionText">
+            Question
+          </h2>
+
+
+          <div id="practiceOptions"
+               style="margin-top:20px;">
+          </div>
+
+
+          <div id="practiceFeedback"
+               style="
+                 margin-top:20px;
+                 padding:15px;
+                 display:none;
+                 border-radius:10px;
+               ">
+          </div>
+
+
+          <div style="
+            margin-top:20px;
+            display:flex;
+            justify-content:space-between;
+          ">
+
+            <button class="btn"
+                    onclick="previousPracticeQuestion()">
+              ← Previous
+            </button>
+
+            <button class="btn"
+                    onclick="nextPracticeQuestion()">
+              Next →
+            </button>
+
+          </div>
+
+        </div>
 
       </div>
 
@@ -129,16 +342,19 @@
   <section id="instructions" style="display:none;">
 
     <header class="header">
+
       <div class="logo">
         MHT-CET <span>2027</span>
       </div>
+
     </header>
+
 
     <main class="container">
 
       <div class="card">
 
-        <h1>Practice Test Instructions</h1>
+        <h1>📝 Mock Test Instructions</h1>
 
         <br>
 
@@ -146,29 +362,29 @@
 
         <p>⏱️ Time: 20 Minutes</p>
 
-        <p>📚 Subjects: Physics, Chemistry & Mathematics</p>
+        <p>📚 Physics, Chemistry & Mathematics</p>
 
-        <p>📝 Each question has four options.</p>
+        <p>📝 Four options for every question</p>
 
-        <p>📊 Your score will be shown after submission.</p>
+        <p>📊 Result after submission</p>
 
         <br>
 
         <p>
-          This is an unofficial practice portal for
-          educational purposes.
+          This is an unofficial practice portal
+          for educational purposes.
         </p>
 
         <br>
 
-        <button class="btn" onclick="startExam()">
-          Start Test
+        <button class="btn"
+                onclick="startExam()">
+          Start Mock Test
         </button>
 
-        <button
-          class="btn"
-          style="margin-left:10px;"
-          onclick="goHome()">
+        <button class="btn"
+                onclick="goHome()"
+                style="margin-left:10px;">
           Back
         </button>
 
@@ -205,7 +421,6 @@
         <div style="
           display:flex;
           justify-content:space-between;
-          align-items:center;
           margin-bottom:20px;
         ">
 
@@ -225,9 +440,8 @@
         </h2>
 
 
-        <div
-          id="options"
-          style="margin-top:20px;">
+        <div id="options"
+             style="margin-top:20px;">
         </div>
 
 
@@ -237,15 +451,13 @@
           margin-top:25px;
         ">
 
-          <button
-            class="btn"
-            onclick="previousQuestion()">
+          <button class="btn"
+                  onclick="previousQuestion()">
             ← Previous
           </button>
 
-          <button
-            class="btn"
-            onclick="nextQuestion()">
+          <button class="btn"
+                  onclick="nextQuestion()">
             Next →
           </button>
 
@@ -254,28 +466,23 @@
       </div>
 
 
-
-      <!-- Question Navigation -->
-
       <div class="card">
 
         <h3>Questions</h3>
 
-        <div
-          id="questionNumbers"
-          style="
-            display:flex;
-            flex-wrap:wrap;
-            gap:8px;
-            margin-top:15px;
-          ">
+        <div id="questionNumbers"
+             style="
+               display:flex;
+               flex-wrap:wrap;
+               gap:8px;
+               margin-top:15px;
+             ">
         </div>
 
         <br>
 
-        <button
-          class="btn"
-          onclick="submitTest()">
+        <button class="btn"
+                onclick="submitTest()">
           Submit Test
         </button>
 
@@ -337,24 +544,20 @@
       </div>
 
 
-      <!-- Review -->
-
       <div class="card">
 
         <h2>Answer Review</h2>
 
-        <div
-          id="review"
-          style="margin-top:15px;">
+        <div id="review"
+             style="margin-top:15px;">
         </div>
 
       </div>
 
 
-      <button
-        class="btn"
-        onclick="goHome()">
-        Back to Dashboard
+      <button class="btn"
+              onclick="goHome()">
+        ← Back to Dashboard
       </button>
 
     </main>
@@ -365,10 +568,7 @@
 
   <!-- ================= JAVASCRIPT ================= -->
 
-  <!-- Question bank -->
   <script src="questions.js"></script>
-
-  <!-- Main application -->
   <script src="app.js"></script>
 
 </body>
