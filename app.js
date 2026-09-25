@@ -459,3 +459,45 @@ document.addEventListener("DOMContentLoaded", function() {
   goHome();
 
 });
+
+// ========================================
+// PROGRESS TRACKING SYSTEM
+// ========================================
+
+function savePracticeProgress(isCorrect) {
+    let progress = JSON.parse(localStorage.getItem("mhcetProgress")) || {
+        attempted: 0,
+        correct: 0,
+        wrong: 0
+    };
+
+    progress.attempted++;
+
+    if (isCorrect) {
+        progress.correct++;
+    } else {
+        progress.wrong++;
+    }
+
+    localStorage.setItem("mhcetProgress", JSON.stringify(progress));
+}
+
+function getPracticeProgress() {
+    return JSON.parse(localStorage.getItem("mhcetProgress")) || {
+        attempted: 0,
+        correct: 0,
+        wrong: 0
+    };
+}
+
+function getAccuracy() {
+    const progress = getPracticeProgress();
+
+    if (progress.attempted === 0) {
+        return 0;
+    }
+
+    return Math.round(
+        (progress.correct / progress.attempted) * 100
+    );
+}
