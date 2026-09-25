@@ -473,6 +473,7 @@ function savePracticeProgress(isCorrect) {
 
     progress.attempted++;
 
+ 
     if (isCorrect) {
         progress.correct++;
     } else {
@@ -500,4 +501,15 @@ function getAccuracy() {
     return Math.round(
         (progress.correct / progress.attempted) * 100
     );
+}
+
+
+function updateDashboard() {
+    const progress = getPracticeProgress();
+
+    document.querySelector("#home .dashboard-grid .stat-card:nth-child(1) p").textContent =
+        progress.attempted;
+
+    document.querySelector("#home .dashboard-grid .stat-card:nth-child(3) p").textContent =
+        getAccuracy() + "%";
 }
