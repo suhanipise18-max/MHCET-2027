@@ -7,143 +7,318 @@
 body {
   font-family: Arial, sans-serif;
   background: #f5f7fb;
-  color: #1f2937;
+  color: #172033;
 }
 
-button {
-  cursor: pointer;
-  border: none;
-}
+/* ================= HEADER ================= */
 
-a {
-  text-decoration: none;
-  color: inherit;
-}
-
-/* HEADER */
 .header {
-  background: white;
-  padding: 15px 30px;
+  background: #ffffff;
+  height: 70px;
+  padding: 0 35px;
+
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #ddd;
+
+  border-bottom: 1px solid #e5e7eb;
+
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .logo {
-  font-size: 22px;
-  font-weight: bold;
+  font-size: 23px;
+  font-weight: 700;
 }
 
 .logo span {
   color: #2563eb;
 }
 
-/* MAIN CONTAINER */
+/* ================= MAIN CONTAINER ================= */
+
 .container {
   max-width: 1200px;
   margin: auto;
-  padding: 30px 20px;
+  padding: 35px 25px;
 }
 
-/* CARDS */
+/* ================= CARDS ================= */
+
 .card {
-  background: white;
-  border-radius: 14px;
-  padding: 25px;
-  margin-bottom: 20px;
-  box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 24px;
+
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+
+  border: 1px solid #e9edf3;
 }
 
-/* BUTTONS */
+.card h1 {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.card h2 {
+  margin-bottom: 10px;
+}
+
+/* ================= BUTTONS ================= */
+
 .btn {
   background: #2563eb;
   color: white;
+
   padding: 12px 20px;
-  border-radius: 8px;
+
+  border-radius: 9px;
+
   font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.2s;
 }
 
 .btn:hover {
+  transform: translateY(-1px);
   opacity: 0.9;
 }
 
-/* DASHBOARD */
+/* ================= DASHBOARD ================= */
+
 .dashboard-grid {
   display: grid;
+
   grid-template-columns: repeat(4, 1fr);
+
   gap: 18px;
 }
 
 .stat-card {
   background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+
+  padding: 22px;
+
+  border-radius: 14px;
+
+  border: 1px solid #e5e7eb;
+
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
 }
 
 .stat-card h3 {
-  font-size: 14px;
   color: #6b7280;
+
+  font-size: 14px;
+
   margin-bottom: 10px;
 }
 
 .stat-card p {
-  font-size: 28px;
-  font-weight: bold;
+  font-size: 27px;
+
+  font-weight: 700;
 }
 
-/* SUBJECT CARDS */
+/* ================= SUBJECT CARDS ================= */
+
 .subject-grid {
   display: grid;
+
   grid-template-columns: repeat(3, 1fr);
+
   gap: 20px;
 }
 
 .subject-card {
   background: white;
+
   padding: 25px;
-  border-radius: 14px;
+
+  border-radius: 15px;
+
   border: 1px solid #e5e7eb;
+
+  transition: 0.2s;
+
+  cursor: pointer;
+}
+
+.subject-card:hover {
+  transform: translateY(-3px);
+
+  box-shadow: 0 7px 20px rgba(0, 0, 0, 0.08);
 }
 
 .subject-card h2 {
   margin-bottom: 10px;
 }
 
-/* CHAPTERS */
-.chapter-list {
-  display: grid;
-  gap: 12px;
+.subject-card p {
+  color: #6b7280;
+
+  line-height: 1.5;
 }
 
-.chapter {
+/* ================= EXAM AREA ================= */
+
+#questionText {
+  font-size: 21px;
+
+  line-height: 1.5;
+
+  margin-top: 15px;
+}
+
+/* ================= OPTIONS ================= */
+
+.option {
+  width: 100%;
+
+  text-align: left;
+
   background: white;
-  padding: 18px;
+
+  border: 2px solid #e5e7eb;
+
+  padding: 15px;
+
+  margin-bottom: 12px;
+
   border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+
+  font-size: 16px;
+
+  cursor: pointer;
+
+  transition: 0.2s;
 }
 
-/* PROGRESS */
+.option:hover {
+  border-color: #2563eb;
+
+  background: #f8faff;
+}
+
+.option.selected {
+  border-color: #2563eb;
+
+  background: #eff6ff;
+}
+
+/* ================= QUESTION NUMBERS ================= */
+
+#questionNumbers button {
+  width: 40px;
+
+  height: 40px;
+
+  border-radius: 8px;
+
+  border: 1px solid #d1d5db;
+
+  background: white;
+
+  cursor: pointer;
+
+  font-weight: 600;
+}
+
+#questionNumbers button:hover {
+  border-color: #2563eb;
+}
+
+#questionNumbers button.current {
+  background: #2563eb;
+
+  color: white;
+
+  border-color: #2563eb;
+}
+
+#questionNumbers button.answered {
+  border-color: #16a34a;
+}
+
+/* ================= TIMER ================= */
+
+#timer {
+  color: #dc2626;
+
+  font-size: 18px;
+}
+
+/* ================= REVIEW ================= */
+
+#review div {
+  padding: 12px;
+
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* ================= PROGRESS ================= */
+
 .progress-bar {
   width: 100%;
+
   height: 10px;
+
   background: #e5e7eb;
+
   border-radius: 10px;
+
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
+
   background: #2563eb;
-  width: 50%;
+
+  width: 0%;
 }
 
-/* MOBILE */
+/* ================= CHAPTERS ================= */
+
+.chapter-list {
+  display: grid;
+
+  gap: 12px;
+}
+
+.chapter {
+  background: white;
+
+  padding: 18px;
+
+  border-radius: 10px;
+
+  border: 1px solid #e5e7eb;
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+}
+
+/* ================= MOBILE ================= */
+
 @media (max-width: 768px) {
+
+  .header {
+    padding: 0 15px;
+  }
+
+  .container {
+    padding: 20px 15px;
+  }
 
   .dashboard-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -153,12 +328,12 @@ a {
     grid-template-columns: 1fr;
   }
 
-  .header {
-    padding: 15px;
+  .card h1 {
+    font-size: 25px;
   }
 
-  .container {
-    padding: 20px 15px;
+  #questionText {
+    font-size: 18px;
   }
 }
 
@@ -166,5 +341,21 @@ a {
 
   .dashboard-grid {
     grid-template-columns: 1fr;
+  }
+
+  .header {
+    height: 60px;
+  }
+
+  .logo {
+    font-size: 18px;
+  }
+
+  .btn {
+    padding: 10px 14px;
+  }
+
+  .card {
+    padding: 20px;
   }
 }
