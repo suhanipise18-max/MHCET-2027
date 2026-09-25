@@ -1,16 +1,142 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>MHT-CET Practice Portal</title>
+    <title>MHT-CET 2027 Practice Portal</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #222;
+        }
+
+        header {
+            background: #173b7a;
+            color: white;
+            padding: 20px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h2 {
+            margin: 0;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 70px 20px;
+        }
+
+        .hero h1 {
+            font-size: 42px;
+            color: #173b7a;
+            margin-bottom: 15px;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: #555;
+        }
+
+        .subjects {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 40px;
+        }
+
+        .subject {
+            background: white;
+            width: 220px;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .subject h3 {
+            color: #173b7a;
+        }
+
+        .start-btn {
+            margin-top: 30px;
+            padding: 15px 35px;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            background: #ff6b35;
+            color: white;
+            cursor: pointer;
+        }
+
+        .start-btn:hover {
+            background: #e95520;
+        }
+
+        footer {
+            text-align: center;
+            padding: 25px;
+            margin-top: 50px;
+            background: #173b7a;
+            color: white;
+        }
+    </style>
 </head>
 
 <body>
 
+<header>
+    <h2>MHT-CET 2027</h2>
+    <span>Practice Portal</span>
+</header>
+
+<section class="hero">
+
     <h1>MHT-CET 2027 Practice Portal</h1>
 
-    <p>Welcome to the practice portal!</p>
+    <p>
+        Practice Physics, Chemistry and Mathematics
+        with online mock tests.
+    </p>
 
-    <button>Start Test</button>
+    <div class="subjects">
+
+        <div class="subject">
+            <h3>⚡ Physics</h3>
+            <p>Practice Physics questions.</p>
+        </div>
+
+        <div class="subject">
+            <h3>🧪 Chemistry</h3>
+            <p>Practice Chemistry questions.</p>
+        </div>
+
+        <div class="subject">
+            <h3>📐 Mathematics</h3>
+            <p>Practice Mathematics questions.</p>
+        </div>
+
+    </div>
+
+    <button class="start-btn" onclick="startTest()">
+        Start Practice Test
+    </button>
+
+</section>
+
+<footer>
+    Unofficial MHT-CET Practice Portal | For Practice Only
+</footer>
+
+<script>
+
+function startTest() {
+    alert("Practice Test will be available in the next step!");
+}
+
+</script>
 
 </body>
 </html>
