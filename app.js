@@ -1,218 +1,461 @@
-// MHCET 2027 Practice Portal
-// Main JavaScript file
+// ===============================
+// PAGE NAVIGATION
+// ===============================
 
-let currentQuestion = 0;
-let userAnswers = [];
-let timeLeft = 20 * 60;
-let timerInterval;
-
-// Start the practice exam
-function startExam() {
-  currentQuestion = 0;
-  userAnswers = new Array(questions.length).fill(null);
-  timeLeft = 20 * 60;
-
+function hideAllSections() {
   document.getElementById("home").style.display = "none";
+  document.getElementById("practice").style.display = "none";
   document.getElementById("instructions").style.display = "none";
-  document.getElementById("exam").style.display = "block";
+  document.getElementById("exam").style.display = "none";
   document.getElementById("result").style.display = "none";
-
-  createNumberButtons();
-  showQuestion();
-  startTimer();
 }
 
-// Show current question
-function showQuestion() {
-  const q = questions[currentQuestion];
 
-  document.getElementById("questionNumber").textContent =
-    `Question ${currentQuestion + 1}`;
+// Go to Dashboard
+function goHome() {
+  hideAllSections();
+  document.getElementById("home").style.display = "block";
+}
 
-  document.getElementById("subjectName").textContent = q.subject;
 
-  document.getElementById("questionText").textContent = q.question;
+// ===============================
+// PRACTICE SYSTEM
+// ===============================
 
-  const optionsContainer = document.getElementById("options");
+let selectedSubject = "";
+let selectedChapter = "";
+let practiceQuestions = [];
+let currentPracticeQuestion = 0;
+let selectedPracticeAnswer = null;
+
+
+// Open Practice
+function showPractice() {
+
+  hideAllSections();
+
+  document.getElementById("practice").style.display = "block";
+
+  document.getElementById("practiceSubjects").style.display = "block";
+  document.getElementById("chapterSection").style.display = "none";
+  document.getElementById("practiceQuestion").style.display = "none";
+}
+
+
+// Select Subject
+function selectSubject(subject) {
+
+  selectedSubject = subject;
+
+  document.getElementById("practiceSubjects").style.display = "none";
+
+  document.getElementById("chapterSection").style.display = "block";
+
+  document.getElementById("selectedSubject").textContent =
+    subject + " Chapters";
+
+  createChapterList(subject);
+}
+
+
+// ===============================
+// CHAPTER LIST
+// ===============================
+
+function createChapterList(subject) {
+
+  const chapterList = document.getElementById("chapterList");
+
+  chapterList.innerHTML = "";
+
+
+  let chapters = [];
+
+
+  if (subject === "Physics") {
+
+    chapters = [
+      "Units and Measurements",
+      "Motion",
+      "Laws of Motion",
+      "Work, Energy and Power",
+      "Rotational Motion",
+      "Gravitation",
+      "Properties of Matter",
+      "Thermal Properties",
+      "Oscillations",
+      "Waves",
+      "Electrostatics",
+      "Current Electricity",
+      "Magnetic Effects of Current",
+      "Electromagnetic Induction",
+      "Ray Optics",
+      "Modern Physics"
+    ];
+
+  }
+
+
+  else if (subject === "Chemistry") {
+
+    chapters = [
+      "Some Basic Concepts of Chemistry",
+      "Structure of Atom",
+      "Periodic Table",
+      "Chemical Bonding",
+      "States of Matter",
+      "Thermodynamics",
+      "Equilibrium",
+      "Redox Reactions",
+      "Organic Chemistry Basics",
+      "Hydrocarbons",
+      "Solutions",
+      "Electrochemistry",
+      "Chemical Kinetics",
+      "Coordination Compounds"
+    ];
+
+  }
+
+
+  else if (subject === "Mathematics") {
+
+    chapters = [
+      "Trigonometry",
+      "Straight Lines",
+      "Circles",
+      "Vectors",
+      "Three Dimensional Geometry",
+      "Probability",
+      "Matrices",
+      "Determinants",
+      "Limits",
+      "Continuity",
+      "Differentiation",
+      "Integration",
+      "Differential Equations"
+    ];
+
+  }
+
+
+  chapters.forEach(function(chapter) {
+
+    const button = document.createElement("button");
+
+    button.className = "chapter-button";
+
+    button.textContent = chapter;
+
+    button.onclick = function() {
+      selectChapter(chapter);
+    };
+
+    chapterList.appendChild(button);
+
+  });
+
+}
+
+
+// ===============================
+// SELECT CHAPTER
+// ===============================
+
+function selectChapter(chapter) {
+
+  selectedChapter = chapter;
+
+  document.getElementById("chapterSection").style.display = "none";
+
+  document.getElementById("practiceQuestion").style.display = "block";
+
+  document.getElementById("practiceChapter").textContent =
+    chapter;
+
+  loadPracticeQuestions();
+
+}
+
+
+// ===============================
+// LOAD QUESTIONS
+// ===============================
+
+function loadPracticeQuestions() {
+
+  currentPracticeQuestion = 0;
+
+  selectedPracticeAnswer = null;
+
+
+  // Get questions from questions.js
+  if (typeof questions !== "undefined") {
+
+    practiceQuestions = questions.filter(function(q) {
+
+      return q.subject === selectedSubject &&
+             (
+               !q.chapter ||
+               q.chapter === selectedChapter
+             );
+
+    });
+
+  }
+
+
+  // If no questions are found
+  if (practiceQuestions.length === 0) {
+
+    practiceQuestions = [
+      {
+        subject: selectedSubject,
+        chapter: selectedChapter,
+        question:
+          "Practice questions for this chapter will be added soon.",
+        options: [
+          "Option A",
+          "Option B",
+          "Option C",
+          "Option D"
+        ],
+        answer: 0,
+        explanation:
+          "We will add real MHT-CET practice questions to this chapter."
+      }
+    ];
+
+  }
+
+
+  showPracticeQuestion();
+
+}
+
+
+// ===============================
+// SHOW QUESTION
+// ===============================
+
+function showPracticeQuestion() {
+
+  const q = practiceQuestions[currentPracticeQuestion];
+
+
+  document.getElementById("practiceQuestionNumber").textContent =
+    "Question " + (currentPracticeQuestion + 1);
+
+
+  document.getElementById("practiceChapter").textContent =
+    selectedChapter;
+
+
+  document.getElementById("practiceQuestionText").textContent =
+    q.question;
+
+
+  const optionsContainer =
+    document.getElementById("practiceOptions");
+
+
   optionsContainer.innerHTML = "";
 
-  q.options.forEach((option, index) => {
+
+  selectedPracticeAnswer = null;
+
+
+  q.options.forEach(function(option, index) {
+
     const button = document.createElement("button");
 
-    button.className = "option";
-    button.textContent = option;
+    button.className = "practice-option";
 
-    if (userAnswers[currentQuestion] === index) {
-      button.classList.add("selected");
-    }
+    button.textContent =
+      String.fromCharCode(65 + index) + ". " + option;
 
-    button.onclick = function () {
-      userAnswers[currentQuestion] = index;
-      showQuestion();
-      updateNumberButtons();
+
+    button.onclick = function() {
+
+      checkPracticeAnswer(index);
+
     };
+
 
     optionsContainer.appendChild(button);
+
   });
 
-  updateNumberButtons();
+
+  document.getElementById("practiceFeedback").style.display =
+    "none";
+
 }
 
-// Next question
-function nextQuestion() {
-  if (currentQuestion < questions.length - 1) {
-    currentQuestion++;
-    showQuestion();
+
+// ===============================
+// CHECK ANSWER
+// ===============================
+
+function checkPracticeAnswer(index) {
+
+  const q = practiceQuestions[currentPracticeQuestion];
+
+  const feedback =
+    document.getElementById("practiceFeedback");
+
+
+  if (selectedPracticeAnswer !== null) {
+    return;
   }
-}
 
-// Previous question
-function previousQuestion() {
-  if (currentQuestion > 0) {
-    currentQuestion--;
-    showQuestion();
+
+  selectedPracticeAnswer = index;
+
+
+  if (index === q.answer) {
+
+    feedback.style.display = "block";
+
+    feedback.innerHTML =
+      "✅ <strong>Correct!</strong><br><br>" +
+      (q.explanation || "Good job!");
+
   }
+
+  else {
+
+    feedback.style.display = "block";
+
+    feedback.innerHTML =
+      "❌ <strong>Incorrect.</strong><br><br>" +
+      "Correct answer: " +
+      q.options[q.answer] +
+      "<br><br>" +
+      (q.explanation || "");
+
+  }
+
 }
 
-// Create question number buttons
-function createNumberButtons() {
-  const container = document.getElementById("questionNumbers");
 
-  if (!container) return;
+// ===============================
+// NEXT PRACTICE QUESTION
+// ===============================
 
-  container.innerHTML = "";
+function nextPracticeQuestion() {
 
-  questions.forEach((q, index) => {
-    const button = document.createElement("button");
+  if (
+    currentPracticeQuestion <
+    practiceQuestions.length - 1
+  ) {
 
-    button.textContent = index + 1;
+    currentPracticeQuestion++;
 
-    button.onclick = function () {
-      currentQuestion = index;
-      showQuestion();
-    };
+    showPracticeQuestion();
 
-    container.appendChild(button);
-  });
+  }
+
+  else {
+
+    alert("You have completed this chapter!");
+
+  }
+
 }
 
-// Update question number buttons
-function updateNumberButtons() {
-  const buttons = document.querySelectorAll("#questionNumbers button");
 
-  buttons.forEach((button, index) => {
-    button.classList.remove("current", "answered");
+// ===============================
+// PREVIOUS PRACTICE QUESTION
+// ===============================
 
-    if (index === currentQuestion) {
-      button.classList.add("current");
-    }
+function previousPracticeQuestion() {
 
-    if (userAnswers[index] !== null) {
-      button.classList.add("answered");
-    }
-  });
+  if (currentPracticeQuestion > 0) {
+
+    currentPracticeQuestion--;
+
+    showPracticeQuestion();
+
+  }
+
 }
 
-// Timer
-function startTimer() {
-  clearInterval(timerInterval);
 
-  timerInterval = setInterval(function () {
-    timeLeft--;
+// ===============================
+// BACK TO SUBJECTS
+// ===============================
 
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
+function backToSubjects() {
 
-    const timer = document.getElementById("timer");
+  document.getElementById("chapterSection").style.display =
+    "none";
 
-    if (timer) {
-      timer.textContent =
-        `${minutes}:${seconds.toString().padStart(2, "0")}`;
-    }
+  document.getElementById("practiceSubjects").style.display =
+    "block";
 
-    if (timeLeft <= 0) {
-      clearInterval(timerInterval);
-      submitTest();
-    }
-  }, 1000);
 }
 
-// Submit test
-function submitTest() {
-  clearInterval(timerInterval);
 
-  let score = 0;
-  let correct = 0;
-  let wrong = 0;
-  let unanswered = 0;
+// ===============================
+// BACK TO CHAPTERS
+// ===============================
 
-  questions.forEach((q, index) => {
-    if (userAnswers[index] === null) {
-      unanswered++;
-    } else if (userAnswers[index] === q.answer) {
-      correct++;
-      score++;
-    } else {
-      wrong++;
-    }
-  });
+function backToChapters() {
 
-  document.getElementById("exam").style.display = "none";
-  document.getElementById("result").style.display = "block";
+  document.getElementById("practiceQuestion").style.display =
+    "none";
 
-  document.getElementById("score").textContent =
-    `${score} / ${questions.length}`;
+  document.getElementById("chapterSection").style.display =
+    "block";
 
-  document.getElementById("correct").textContent = correct;
-  document.getElementById("wrong").textContent = wrong;
-  document.getElementById("unanswered").textContent = unanswered;
-
-  showReview();
 }
 
-// Show answer review
-function showReview() {
-  const reviewContainer = document.getElementById("review");
 
-  if (!reviewContainer) return;
+// ===============================
+// MOCK TEST
+// ===============================
 
-  reviewContainer.innerHTML = "";
-
-  questions.forEach((q, index) => {
-    const div = document.createElement("div");
-
-    let status = "";
-
-    if (userAnswers[index] === null) {
-      status = "Unanswered";
-    } else if (userAnswers[index] === q.answer) {
-      status = "Correct";
-    } else {
-      status = "Wrong";
-    }
-
-    div.innerHTML = `
-      <strong>Q${index + 1}:</strong> ${status}
-    `;
-
-    reviewContainer.appendChild(div);
-  });
-}
-
-// Return to homepage
-function goHome() {
-  clearInterval(timerInterval);
-
-  document.getElementById("home").style.display = "block";
-  document.getElementById("instructions").style.display = "none";
-  document.getElementById("exam").style.display = "none";
-  document.getElementById("result").style.display = "none";
-}
-
-// Show instructions
 function showInstructions() {
-  document.getElementById("home").style.display = "none";
-  document.getElementById("instructions").style.display = "block";
-  document.getElementById("exam").style.display = "none";
-  document.getElementById("result").style.display = "none";
+
+  hideAllSections();
+
+  document.getElementById("instructions").style.display =
+    "block";
+
 }
+
+
+// Start existing mock test
+function startExam() {
+
+  hideAllSections();
+
+  document.getElementById("exam").style.display =
+    "block";
+
+
+  if (typeof createNumberButtons === "function") {
+    createNumberButtons();
+  }
+
+  if (typeof showQuestion === "function") {
+    showQuestion();
+  }
+
+  if (typeof startTimer === "function") {
+    startTimer();
+  }
+
+}
+
+
+// ===============================
+// START DASHBOARD
+// ===============================
+
+document.addEventListener("DOMContentLoaded", function() {
+
+  goHome();
+
+});
