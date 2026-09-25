@@ -15,6 +15,7 @@ function hideAllSections() {
 function goHome() {
   hideAllSections();
   document.getElementById("home").style.display = "block";
+  updateDashboard();
 }
 
 
