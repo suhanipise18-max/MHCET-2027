@@ -1,1600 +1,1331 @@
-// ============================================================
+// ======================================================
 // MHT-CET 2027 PRACTICE PORTAL
-// CET-STYLE MOCK TEST ENGINE
-// ============================================================
-
-let currentSubject = "Physics";
-let currentChapter = "";
-let currentDifficulty = "Easy";
+// Exam-style PCM Mock Test Engine
+// ======================================================
 
 let currentTest = null;
-let currentQuestionIndex = 0;
-let userAnswers = {};
-let markedQuestions = {};
-let testTimer = null;
-let remainingSeconds = 0;
-let testSubmitted = false;
+let currentSection = "physics";
+let currentPhase = "pc"; // pc = Physics + Chemistry, math = Mathematics
+let currentQuestionIndex = {
+    physics: 0,
+    chemistry: 0,
+    mathematics: 0
+};
 
+let timerInterval = null;
+let remainingSeconds = 90 * 60;
 
-// ============================================================
+// ------------------------------------------------------
 // BASIC HELPERS
-// ============================================================
+// ------------------------------------------------------
 
-function getApp(id) {
-  return document.getElementById(id);
+function shuffle(array) {
+    return [...array].sort(() => Math.random() - 0.5);
 }
 
-function shuffleArray(array) {
-  const arr = [...array];
-
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-
-  return arr;
+function getQuestionsBySubject(subject) {
+    return questionBank.filter(q => q.subject === subject);
 }
 
-function getPracticeQuestions() {
-  return (window.questions || []).filter(q => q.type === "practice");
+function getMixedQuestions(subject, count) {
+    const all = getQuestionsBySubject(subject);
+
+    const easy = shuffle(all.filter(q => q.difficulty === "Easy"));
+    const medium = shuffle(all.filter(q => q.difficulty === "Medium"));
+    const hard = shuffle(all.filter(q => q.difficulty === "Hard"));
+
+    const selected = [
+        ...easy.slice(0, Math.ceil(count / 3)),
+        ...medium.slice(0, Math.ceil(count / 3)),
+        ...hard.slice(0, Math.floor(count / 3))
+    ];
+
+    return shuffle(selected).slice(0, count);
 }
 
-
-// ============================================================
+// ------------------------------------------------------
 // DASHBOARD
-// ============================================================
+// ------------------------------------------------------
 
 function showDashboard() {
-  stopTimer();
+    stopTimer();
 
-  const app = getApp("app");
+    const app = document.getElementById("app");
 
-  if (!app) return;
+    app.innerHTML = `
+        <div class="dashboard">
+            <h1>MHT-CET 2027 Practice Portal</h1>
 
-  app.innerHTML = `
-    <div class="dashboard">
+            <div class="dashboard-grid">
 
-      <h1>MHT-CET 2027 Practice Portal</h1>
+                <button onclick="showSubjects()">
+                    📚 Chapter Practice
+                </button>
 
-      <div class="dashboard-grid">
+                <button onclick="showMockTests()">
+                    📝 Full Mock Tests
+                </button>
 
-        <button onclick="showSubject('Physics')">
-          <h2>Physics</h2>
-          <p>Practice Physics chapters</p>
-        </button>
+                <button onclick="showPYQTests()">
+                    📄 PYQ Tests
+                </button>
 
-        <button onclick="showSubject('Chemistry')">
-          <h2>Chemistry</h2>
-          <p>Practice Chemistry chapters</p>
-        </button>
+                <button onclick="showPerformance()">
+                    📊 Performance
+                </button>
 
-        <button onclick="showSubject('Mathematics')">
-          <h2>Mathematics</h2>
-          <p>Practice Mathematics chapters</p>
-        </button>
-
-        <button onclick="showMockTests()">
-          <h2>Mock Tests</h2>
-          <p>50 CET-style mock tests</p>
-        </button>
-
-        <button onclick="showPYQTests()">
-          <h2>PYQ</h2>
-          <p>Previous-year practice</p>
-        </button>
-
-        <button onclick="showPerformance()">
-          <h2>Performance</h2>
-          <p>Track your progress</p>
-        </button>
-
-      </div>
-
-    </div>
-  `;
-}
-
-
-// ============================================================
-// SUBJECT PAGE
-// ============================================================
-
-function showSubject(subject) {
-
-  currentSubject = subject;
-
-  const chapters =
-    window.chapterCatalog?.[subject] || [];
-
-  const app = getApp("app");
-
-  if (!app) return;
-
-  app.innerHTML = `
-    <div class="page">
-
-      <button onclick="showDashboard()">← Dashboard</button>
-
-      <h1>${subject}</h1>
-
-      <div class="chapter-grid">
-
-        ${chapters.map((chapter, index) => `
-          <button
-            onclick="showChapter('${subject}', '${chapter.replace(/'/g, "\\'")}')"
-          >
-            <strong>${index + 1}. ${chapter}</strong>
-            <span>30 Questions</span>
-          </button>
-        `).join("")}
-
-      </div>
-
-    </div>
-  `;
-}
-
-
-// ============================================================
-// CHAPTER PAGE
-// ============================================================
-
-function showChapter(subject, chapter) {
-
-  currentSubject = subject;
-  currentChapter = chapter;
-
-  const app = getApp("app");
-
-  if (!app) return;
-
-  app.innerHTML = `
-    <div class="page">
-
-      <button onclick="showSubject('${subject}')">
-        ← Back
-      </button>
-
-      <h1>${chapter}</h1>
-
-      <p>Select difficulty</p>
-
-      <div class="difficulty-grid">
-
-        <button onclick="startPractice('Easy')">
-          Easy
-          <span>10 Questions</span>
-        </button>
-
-        <button onclick="startPractice('Medium')">
-          Medium
-          <span>10 Questions</span>
-        </button>
-
-        <button onclick="startPractice('Hard')">
-          Hard
-          <span>10 Questions</span>
-        </button>
-
-      </div>
-
-    </div>
-  `;
-}
-
-
-// ============================================================
-// PRACTICE MODE
-// ============================================================
-
-function startPractice(difficulty) {
-
-  currentDifficulty = difficulty;
-
-  const bank = getPracticeQuestions().filter(q =>
-    q.subject === currentSubject &&
-    q.chapter === currentChapter &&
-    q.difficulty === difficulty
-  );
-
-  if (!bank.length) {
-    alert("No questions available for this section.");
-    return;
-  }
-
-  currentTest = {
-    mode: "practice",
-    title: `${currentChapter} - ${difficulty}`,
-    questions: shuffleArray(bank)
-  };
-
-  currentQuestionIndex = 0;
-  userAnswers = {};
-  markedQuestions = {};
-  testSubmitted = false;
-
-  renderPracticeQuestion();
-}
-
-
-// ============================================================
-// PRACTICE QUESTION
-// ============================================================
-
-function renderPracticeQuestion() {
-
-  const q =
-    currentTest.questions[currentQuestionIndex];
-
-  const app = getApp("app");
-
-  if (!app || !q) return;
-
-  app.innerHTML = `
-    <div class="exam-page">
-
-      <div class="exam-header">
-
-        <div>
-          <strong>${currentTest.title}</strong>
-          <p>
-            Question ${currentQuestionIndex + 1}
-            of ${currentTest.questions.length}
-          </p>
+            </div>
         </div>
-
-        <button onclick="showDashboard()">
-          Exit
-        </button>
-
-      </div>
-
-      <div class="exam-body">
-
-        <main class="question-box">
-
-          <h2>${q.question}</h2>
-
-          <div class="options">
-
-            ${q.options.map((option, index) => `
-              <label class="option">
-                <input
-                  type="radio"
-                  name="answer"
-                  value="${index}"
-                  ${userAnswers[q.id] === index ? "checked" : ""}
-                  onchange="savePracticeAnswer(${index})"
-                >
-                <span>${option}</span>
-              </label>
-            `).join("")}
-
-          </div>
-
-          <div class="question-actions">
-
-            <button onclick="previousPracticeQuestion()">
-              Previous
-            </button>
-
-            <button onclick="clearPracticeAnswer()">
-              Clear Response
-            </button>
-
-            <button onclick="nextPracticeQuestion()">
-              ${currentQuestionIndex === currentTest.questions.length - 1
-                ? "Finish"
-                : "Next"}
-            </button>
-
-          </div>
-
-        </main>
-
-        <aside class="question-palette">
-
-          <h3>Questions</h3>
-
-          ${currentTest.questions.map((item, index) => `
-            <button
-              class="${getPaletteClass(item.id, index)}"
-              onclick="goToPracticeQuestion(${index})"
-            >
-              ${index + 1}
-            </button>
-          `).join("")}
-
-        </aside>
-
-      </div>
-
-    </div>
-  `;
+    `;
 }
 
+// ------------------------------------------------------
+// SUBJECTS
+// ------------------------------------------------------
 
-function savePracticeAnswer(answer) {
+function showSubjects() {
+    stopTimer();
 
-  const q =
-    currentTest.questions[currentQuestionIndex];
+    const app = document.getElementById("app");
 
-  userAnswers[q.id] = Number(answer);
-}
+    app.innerHTML = `
+        <div class="page">
 
+            <button onclick="showDashboard()">← Back</button>
 
-function previousPracticeQuestion() {
+            <h1>Chapter Practice</h1>
 
-  if (currentQuestionIndex > 0) {
-    currentQuestionIndex--;
-    renderPracticeQuestion();
-  }
-}
+            <div class="subject-buttons">
+                <button onclick="showChapters('Physics')">
+                    Physics
+                </button>
 
+                <button onclick="showChapters('Chemistry')">
+                    Chemistry
+                </button>
 
-function nextPracticeQuestion() {
-
-  if (
-    currentQuestionIndex <
-    currentTest.questions.length - 1
-  ) {
-
-    currentQuestionIndex++;
-    renderPracticeQuestion();
-
-  } else {
-
-    showPracticeResult();
-
-  }
-}
-
-
-function clearPracticeAnswer() {
-
-  const q =
-    currentTest.questions[currentQuestionIndex];
-
-  delete userAnswers[q.id];
-
-  renderPracticeQuestion();
-}
-
-
-function goToPracticeQuestion(index) {
-
-  currentQuestionIndex = index;
-
-  renderPracticeQuestion();
-}
-
-
-// ============================================================
-// MOCK TEST LIST
-// ============================================================
-
-function showMockTests() {
-
-  const app = getApp("app");
-
-  if (!app) return;
-
-  const tests = window.mockTests || [];
-
-  app.innerHTML = `
-    <div class="page">
-
-      <button onclick="showDashboard()">
-        ← Dashboard
-      </button>
-
-      <h1>MHT-CET Mock Tests</h1>
-
-      <p>
-        Physics + Chemistry: 60 minutes
-        <br>
-        Mathematics: 120 minutes
-      </p>
-
-      <div class="mock-grid">
-
-        ${tests.map(test => `
-          <button onclick="startCETMock('${test.id}')">
-            <strong>${test.title}</strong>
-
-            <span>
-              Physics + Chemistry: 1 Hour
-            </span>
-
-            <span>
-              Mathematics: 2 Hours
-            </span>
-          </button>
-        `).join("")}
-
-      </div>
-
-    </div>
-  `;
-}
-
-
-// ============================================================
-// CREATE CET MOCK
-// ============================================================
-
-function startCETMock(testId) {
-
-  const bank = getPracticeQuestions();
-
-  const physics = shuffleArray(
-    bank.filter(q => q.subject === "Physics")
-  );
-
-  const chemistry = shuffleArray(
-    bank.filter(q => q.subject === "Chemistry")
-  );
-
-  const mathematics = shuffleArray(
-    bank.filter(q => q.subject === "Mathematics")
-  );
-
-
-  // ----------------------------------------------------------
-  // MIX DIFFICULTIES
-  // ----------------------------------------------------------
-
-  function mixedQuestions(list, count) {
-
-    const easy = shuffleArray(
-      list.filter(q => q.difficulty === "Easy")
-    );
-
-    const medium = shuffleArray(
-      list.filter(q => q.difficulty === "Medium")
-    );
-
-    const hard = shuffleArray(
-      list.filter(q => q.difficulty === "Hard")
-    );
-
-    const result = [];
-
-    while (
-      result.length < count &&
-      (easy.length || medium.length || hard.length)
-    ) {
-
-      if (easy.length) result.push(easy.pop());
-
-      if (
-        result.length < count &&
-        medium.length
-      ) {
-        result.push(medium.pop());
-      }
-
-      if (
-        result.length < count &&
-        hard.length
-      ) {
-        result.push(hard.pop());
-      }
-    }
-
-    return shuffleArray(result).slice(0, count);
-  }
-
-
-  // ----------------------------------------------------------
-  // CET-STYLE SECTION SETUP
-  // ----------------------------------------------------------
-
-  currentTest = {
-
-    mode: "mock",
-
-    id: testId,
-
-    sections: {
-
-      physics: {
-        name: "Physics",
-        questions: mixedQuestions(physics, 50),
-        duration: 60 * 60
-      },
-
-      chemistry: {
-        name: "Chemistry",
-        questions: mixedQuestions(chemistry, 50),
-        duration: 60 * 60
-      },
-
-      mathematics: {
-        name: "Mathematics",
-        questions: mixedQuestions(mathematics, 50),
-        duration: 120 * 60
-      }
-
-    }
-
-  };
-
-
-  currentTest.sections.physics.questions =
-    currentTest.sections.physics.questions.map(q => ({
-      ...q,
-      section: "Physics"
-    }));
-
-  currentTest.sections.chemistry.questions =
-    currentTest.sections.chemistry.questions.map(q => ({
-      ...q,
-      section: "Chemistry"
-    }));
-
-  currentTest.sections.mathematics.questions =
-    currentTest.sections.mathematics.questions.map(q => ({
-      ...q,
-      section: "Mathematics"
-    }));
-
-
-  currentSection = "physics";
-
-  currentQuestionIndex = 0;
-
-  userAnswers = {};
-
-  markedQuestions = {};
-
-  testSubmitted = false;
-
-  startSection("physics");
-}
-
-
-// ============================================================
-// CURRENT SECTION
-// ============================================================
-
-let currentSection = "physics";
-
-
-function getCurrentSection() {
-
-  return currentTest.sections[currentSection];
-
-}
-
-
-// ============================================================
-// START SECTION
-// ============================================================
-
-function startSection(section) {
-
-  stopTimer();
-
-  currentSection = section;
-
-  currentQuestionIndex = 0;
-
-  remainingSeconds =
-    currentTest.sections[section].duration;
-
-  renderMockQuestion();
-
-  startTimer();
-}
-
-
-// ============================================================
-// MOCK EXAM UI
-// ============================================================
-
-function renderMockQuestion() {
-
-  const section =
-    getCurrentSection();
-
-  const q =
-    section.questions[currentQuestionIndex];
-
-  const app = getApp("app");
-
-  if (!app || !q) return;
-
-
-  const total =
-    section.questions.length;
-
-
-  app.innerHTML = `
-
-    <div class="cet-exam">
-
-      <header class="cet-header">
-
-        <div>
-
-          <h2>MHT-CET 2027 Mock Test</h2>
-
-          <p>
-            ${currentTest.id}
-          </p>
+                <button onclick="showChapters('Mathematics')">
+                    Mathematics
+                </button>
+            </div>
 
         </div>
+    `;
+}
 
-        <div class="cet-timer">
+// ------------------------------------------------------
+// CHAPTERS
+// ------------------------------------------------------
 
-          Time Left:
-          <strong id="examTimer">
-            ${formatTime(remainingSeconds)}
-          </strong>
+function showChapters(subject) {
+    const app = document.getElementById("app");
 
-        </div>
+    const chapters = chapterCatalog.filter(
+        c => c.subject === subject
+    );
 
-      </header>
+    app.innerHTML = `
+        <div class="page">
 
+            <button onclick="showSubjects()">← Back</button>
 
-      <nav class="section-tabs">
+            <h1>${subject}</h1>
 
-        <button
-          class="${currentSection === "physics" ? "active" : ""}"
-          onclick="switchSection('physics')"
-        >
-          Physics
-        </button>
+            <div class="chapter-grid">
 
-        <button
-          class="${currentSection === "chemistry" ? "active" : ""}"
-          onclick="switchSection('chemistry')"
-        >
-          Chemistry
-        </button>
-
-        <button
-          class="${currentSection === "mathematics" ? "active" : ""}"
-          onclick="switchSection('mathematics')"
-        >
-          Mathematics
-        </button>
-
-      </nav>
-
-
-      <div class="cet-layout">
-
-
-        <main class="cet-question-area">
-
-          <div class="question-top">
-
-            <strong>
-              ${section.name}
-            </strong>
-
-            <span>
-              Question
-              ${currentQuestionIndex + 1}
-              of
-              ${total}
-            </span>
-
-          </div>
-
-
-          <div class="question-card">
-
-            <h2>
-              ${q.question}
-            </h2>
-
-
-            <div class="cet-options">
-
-              ${q.options.map((option, index) => `
-
-                <label>
-
-                  <input
-                    type="radio"
-                    name="cetAnswer"
-                    value="${index}"
-                    ${
-                      userAnswers[q.id] === index
-                        ? "checked"
-                        : ""
-                    }
-                    onchange="saveMockAnswer(${index})"
-                  >
-
-                  <span>
-                    ${String.fromCharCode(65 + index)}.
-                    ${option}
-                  </span>
-
-                </label>
-
-              `).join("")}
+                ${chapters.map(chapter => `
+                    <button
+                        onclick="startChapterPractice('${subject}', '${chapter.name.replace(/'/g, "\\'")}')"
+                    >
+                        ${chapter.name}
+                        <small>30 Questions</small>
+                    </button>
+                `).join("")}
 
             </div>
 
-
-            <div class="cet-actions">
-
-              <button onclick="markForReview()">
-                ${markedQuestions[q.id]
-                  ? "Unmark Review"
-                  : "Mark for Review"}
-              </button>
-
-              <button onclick="clearMockAnswer()">
-                Clear Response
-              </button>
-
-              <button
-                onclick="previousMockQuestion()"
-              >
-                Previous
-              </button>
-
-              <button
-                onclick="nextMockQuestion()"
-              >
-                ${
-                  currentQuestionIndex === total - 1
-                    ? "Finish Section"
-                    : "Save & Next"
-                }
-              </button>
-
-            </div>
-
-          </div>
-
-        </main>
-
-
-        <aside class="cet-sidebar">
-
-          <h3>${section.name}</h3>
-
-          <div class="palette">
-
-            ${section.questions.map((item, index) => `
-
-              <button
-                class="${getMockPaletteClass(
-                  item.id,
-                  index
-                )}"
-                onclick="goToMockQuestion(${index})"
-              >
-                ${index + 1}
-              </button>
-
-            `).join("")}
-
-          </div>
-
-
-          <div class="palette-legend">
-
-            <p>● Answered</p>
-            <p>● Not Answered</p>
-            <p>● Marked for Review</p>
-
-          </div>
-
-
-          <button
-            class="submit-test"
-            onclick="submitMockTest()"
-          >
-            Submit Test
-          </button>
-
-        </aside>
-
-      </div>
-
-    </div>
-  `;
+        </div>
+    `;
 }
 
-
-// ============================================================
-// SECTION SWITCH
-// ============================================================
-
-function switchSection(section) {
-
-  if (testSubmitted) return;
-
-  stopTimer();
-
-  currentSection = section;
-
-  currentQuestionIndex = 0;
-
-  remainingSeconds =
-    currentTest.sections[section].duration;
-
-  renderMockQuestion();
-
-  startTimer();
-}
-
-
-// ============================================================
-// MOCK ANSWER
-// ============================================================
-
-function saveMockAnswer(answer) {
-
-  const section =
-    getCurrentSection();
-
-  const q =
-    section.questions[currentQuestionIndex];
-
-  userAnswers[q.id] = Number(answer);
-
-  renderMockQuestion();
-}
-
-
-// ============================================================
-// MOCK NAVIGATION
-// ============================================================
-
-function previousMockQuestion() {
-
-  if (currentQuestionIndex > 0) {
-
-    currentQuestionIndex--;
-
-    renderMockQuestion();
-
-  }
-}
-
-
-function nextMockQuestion() {
-
-  const section =
-    getCurrentSection();
-
-  if (
-    currentQuestionIndex <
-    section.questions.length - 1
-  ) {
-
-    currentQuestionIndex++;
-
-    renderMockQuestion();
-
-  } else {
-
-    finishCurrentSection();
-
-  }
-}
-
-
-function goToMockQuestion(index) {
-
-  currentQuestionIndex = index;
-
-  renderMockQuestion();
-}
-
-
-// ============================================================
-// MARK FOR REVIEW
-// ============================================================
-
-function markForReview() {
-
-  const section =
-    getCurrentSection();
-
-  const q =
-    section.questions[currentQuestionIndex];
-
-  markedQuestions[q.id] =
-    !markedQuestions[q.id];
-
-  renderMockQuestion();
-}
-
-
-// ============================================================
-// CLEAR RESPONSE
-// ============================================================
-
-function clearMockAnswer() {
-
-  const section =
-    getCurrentSection();
-
-  const q =
-    section.questions[currentQuestionIndex];
-
-  delete userAnswers[q.id];
-
-  renderMockQuestion();
-}
-
-
-// ============================================================
-// FINISH SECTION
-// ============================================================
-
-function finishCurrentSection() {
-
-  stopTimer();
-
-  if (currentSection === "physics") {
-
-    const go =
-      confirm(
-        "Physics section completed. Move to Chemistry?"
-      );
-
-    if (go) {
-
-      startSection("chemistry");
-
-    } else {
-
-      startTimer();
-
-    }
-
-  } else if (currentSection === "chemistry") {
-
-    const go =
-      confirm(
-        "Physics + Chemistry section completed. Move to Mathematics?"
-      );
-
-    if (go) {
-
-      startSection("mathematics");
-
-    } else {
-
-      startTimer();
-
-    }
-
-  } else {
-
-    const submit =
-      confirm(
-        "Mathematics section completed. Submit the mock test?"
-      );
-
-    if (submit) {
-
-      submitMockTest();
-
-    } else {
-
-      startTimer();
-
-    }
-  }
-}
-
-
-// ============================================================
-// TIMER
-// ============================================================
-
-function startTimer() {
-
-  stopTimer();
-
-  testTimer = setInterval(() => {
-
-    remainingSeconds--;
-
-    const timer =
-      getApp("examTimer");
-
-    if (timer) {
-
-      timer.textContent =
-        formatTime(remainingSeconds);
-
-    }
-
-    if (remainingSeconds <= 0) {
-
-      stopTimer();
-
-      alert(
-        `${getCurrentSection().name} time is over.`
-      );
-
-      if (currentSection === "physics") {
-
-        startSection("chemistry");
-
-      } else if (currentSection === "chemistry") {
-
-        startSection("mathematics");
-
-      } else {
-
-        submitMockTest();
-
-      }
-
-    }
-
-  }, 1000);
-}
-
-
-function stopTimer() {
-
-  if (testTimer) {
-
-    clearInterval(testTimer);
-
-    testTimer = null;
-
-  }
-}
-
-
-function formatTime(seconds) {
-
-  const h =
-    Math.floor(seconds / 3600);
-
-  const m =
-    Math.floor((seconds % 3600) / 60);
-
-  const s =
-    seconds % 60;
-
-  if (h > 0) {
-
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-
-  }
-
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
-
-
-// ============================================================
-// SUBMIT MOCK TEST
-// ============================================================
-
-function submitMockTest() {
-
-  if (testSubmitted) return;
-
-  const confirmSubmit =
-    confirm(
-      "Are you sure you want to submit the complete mock test?"
+// ------------------------------------------------------
+// CHAPTER PRACTICE
+// ------------------------------------------------------
+
+function startChapterPractice(subject, chapter) {
+
+    const questions = questionBank.filter(
+        q =>
+            q.subject === subject &&
+            q.chapter === chapter
     );
 
-  if (!confirmSubmit) return;
+    if (!questions.length) {
+        alert("No questions available for this chapter yet.");
+        return;
+    }
 
-  testSubmitted = true;
+    let index = 0;
+    let answers = {};
 
-  stopTimer();
+    function render() {
 
-  showMockResult();
+        const q = questions[index];
+
+        document.getElementById("app").innerHTML = `
+            <div class="practice-page">
+
+                <div class="top-bar">
+                    <button onclick="showChapters('${subject}')">
+                        ← Back
+                    </button>
+
+                    <span>
+                        ${index + 1} / ${questions.length}
+                    </span>
+                </div>
+
+                <h2>${chapter}</h2>
+
+                <div class="question-card">
+
+                    <p class="question-number">
+                        Question ${index + 1}
+                    </p>
+
+                    <h3>${q.question}</h3>
+
+                    <div class="options">
+
+                        ${q.options.map((option, i) => `
+                            <button
+                                class="${answers[q.id] === i ? "selected" : ""}"
+                                onclick="selectPracticeAnswer(${i})"
+                            >
+                                ${String.fromCharCode(65 + i)}.
+                                ${option}
+                            </button>
+                        `).join("")}
+
+                    </div>
+
+                    <div class="navigation">
+
+                        <button
+                            onclick="previousPractice()"
+                            ${index === 0 ? "disabled" : ""}
+                        >
+                            Previous
+                        </button>
+
+                        <button onclick="nextPractice()">
+                            ${index === questions.length - 1
+                                ? "Finish"
+                                : "Next"}
+                        </button>
+
+                    </div>
+
+                </div>
+            </div>
+        `;
+
+        window.selectPracticeAnswer = function(i) {
+            answers[q.id] = i;
+            render();
+        };
+
+        window.previousPractice = function() {
+            if (index > 0) {
+                index--;
+                render();
+            }
+        };
+
+        window.nextPractice = function() {
+
+            if (index < questions.length - 1) {
+                index++;
+                render();
+            } else {
+                showPracticeResult(
+                    questions,
+                    answers,
+                    subject,
+                    chapter
+                );
+            }
+        };
+    }
+
+    render();
 }
 
+// ------------------------------------------------------
+// PRACTICE RESULT
+// ------------------------------------------------------
 
-// ============================================================
-// MOCK RESULT
-// ============================================================
+function showPracticeResult(
+    questions,
+    answers,
+    subject,
+    chapter
+) {
 
-function showMockResult() {
+    let correct = 0;
+    let wrong = 0;
+    let unanswered = 0;
 
-  let total = 0;
-  let correct = 0;
-  let wrong = 0;
-  let unanswered = 0;
+    questions.forEach(q => {
 
-  const subjectResults = {};
-
-
-  Object.keys(currentTest.sections).forEach(key => {
-
-    const section =
-      currentTest.sections[key];
-
-    let sectionCorrect = 0;
-    let sectionWrong = 0;
-    let sectionUnanswered = 0;
-
-
-    section.questions.forEach(q => {
-
-      total++;
-
-      if (userAnswers[q.id] === undefined) {
-
-        unanswered++;
-        sectionUnanswered++;
-
-      } else if (
-        userAnswers[q.id] === q.answer
-      ) {
-
-        correct++;
-        sectionCorrect++;
-
-      } else {
-
-        wrong++;
-        sectionWrong++;
-
-      }
+        if (answers[q.id] === undefined) {
+            unanswered++;
+        } else if (
+            answers[q.id] === q.answer
+        ) {
+            correct++;
+        } else {
+            wrong++;
+        }
 
     });
 
+    document.getElementById("app").innerHTML = `
 
-    subjectResults[section.name] = {
-      total: section.questions.length,
-      correct: sectionCorrect,
-      wrong: sectionWrong,
-      unanswered: sectionUnanswered
-    };
+        <div class="result-page">
 
-  });
+            <h1>Practice Complete 🎉</h1>
 
-
-  const percentage =
-    total
-      ? ((correct / total) * 100).toFixed(2)
-      : 0;
-
-
-  const app = getApp("app");
-
-  if (!app) return;
-
-
-  app.innerHTML = `
-
-    <div class="result-page">
-
-      <h1>Mock Test Result</h1>
-
-      <h2>${currentTest.id}</h2>
-
-
-      <div class="result-summary">
-
-        <div>
-          <strong>${total}</strong>
-          <span>Total</span>
-        </div>
-
-        <div>
-          <strong>${correct}</strong>
-          <span>Correct</span>
-        </div>
-
-        <div>
-          <strong>${wrong}</strong>
-          <span>Wrong</span>
-        </div>
-
-        <div>
-          <strong>${unanswered}</strong>
-          <span>Unanswered</span>
-        </div>
-
-        <div>
-          <strong>${percentage}%</strong>
-          <span>Accuracy</span>
-        </div>
-
-      </div>
-
-
-      <h2>Subject-wise Performance</h2>
-
-
-      <div class="subject-results">
-
-        ${Object.keys(subjectResults).map(subject => {
-
-          const r =
-            subjectResults[subject];
-
-          return `
+            <h2>${chapter}</h2>
 
             <div class="result-card">
 
-              <h3>${subject}</h3>
+                <p>Correct: <strong>${correct}</strong></p>
+                <p>Wrong: <strong>${wrong}</strong></p>
+                <p>Unanswered: <strong>${unanswered}</strong></p>
 
-              <p>
-                Total:
-                <strong>${r.total}</strong>
-              </p>
-
-              <p>
-                Correct:
-                <strong>${r.correct}</strong>
-              </p>
-
-              <p>
-                Wrong:
-                <strong>${r.wrong}</strong>
-              </p>
-
-              <p>
-                Unanswered:
-                <strong>${r.unanswered}</strong>
-              </p>
+                <h2>
+                    Score: ${correct} / ${questions.length}
+                </h2>
 
             </div>
 
-          `;
+            <button onclick="showChapters('${subject}')">
+                Practice Again
+            </button>
 
-        }).join("")}
+            <button onclick="showDashboard()">
+                Dashboard
+            </button>
 
-      </div>
-
-
-      <div class="result-buttons">
-
-        <button onclick="showMockReview()">
-          Review Answers
-        </button>
-
-        <button onclick="showMockTests()">
-          Back to Mock Tests
-        </button>
-
-        <button onclick="showDashboard()">
-          Dashboard
-        </button>
-
-      </div>
-
-    </div>
-  `;
+        </div>
+    `;
 }
 
+// ======================================================
+// MOCK TEST LIST
+// ======================================================
 
-// ============================================================
-// REVIEW
-// ============================================================
+function showMockTests() {
 
-function showMockReview() {
+    stopTimer();
 
-  const allQuestions = [];
+    const app = document.getElementById("app");
 
-  Object.keys(currentTest.sections).forEach(key => {
+    app.innerHTML = `
 
-    allQuestions.push(
-      ...currentTest.sections[key].questions
+        <div class="page">
+
+            <button onclick="showDashboard()">← Back</button>
+
+            <h1>MHT-CET Full Mock Tests</h1>
+
+            <div class="mock-info">
+
+                <p><strong>150 Questions</strong></p>
+                <p><strong>200 Marks</strong></p>
+                <p><strong>180 Minutes</strong></p>
+                <p>No Negative Marking</p>
+
+            </div>
+
+            <div class="mock-grid">
+
+                ${mockTests.map(test => `
+
+                    <div class="mock-card">
+
+                        <h3>${test.title}</h3>
+
+                        <p>150 Questions</p>
+                        <p>200 Marks</p>
+                        <p>180 Minutes</p>
+
+                        <button onclick="startCETMock(${test.id})">
+                            Start Mock Test
+                        </button>
+
+                    </div>
+
+                `).join("")}
+
+            </div>
+
+        </div>
+    `;
+}
+
+// ======================================================
+// START CET MOCK
+// ======================================================
+
+function startCETMock(testId) {
+
+    stopTimer();
+
+    const physics = getMixedQuestions(
+        "Physics",
+        50
     );
 
-  });
+    const chemistry = getMixedQuestions(
+        "Chemistry",
+        50
+    );
 
+    const mathematics = getMixedQuestions(
+        "Mathematics",
+        50
+    );
 
-  const app = getApp("app");
+    currentTest = {
 
-  if (!app) return;
+        id: testId,
 
+        phase: "pc",
 
-  app.innerHTML = `
+        sections: {
 
-    <div class="review-page">
+            physics: {
+                questions: physics,
+                answers: {},
+                marked: {}
+            },
 
-      <button onclick="showMockResult()">
-        ← Back to Result
-      </button>
+            chemistry: {
+                questions: chemistry,
+                answers: {},
+                marked: {}
+            },
 
-      <h1>Answer Review</h1>
+            mathematics: {
+                questions: mathematics,
+                answers: {},
+                marked: {}
+            }
 
+        }
 
-      ${allQuestions.map((q, index) => {
+    };
 
-        const selected =
-          userAnswers[q.id];
+    currentPhase = "pc";
 
-        const status =
-          selected === undefined
-            ? "Unanswered"
-            : selected === q.answer
-              ? "Correct"
-              : "Wrong";
+    currentSection = "physics";
 
+    currentQuestionIndex = {
+        physics: 0,
+        chemistry: 0,
+        mathematics: 0
+    };
 
-        return `
+    remainingSeconds = 90 * 60;
 
-          <div class="review-card">
+    renderCETExam();
 
-            <h3>
-              ${index + 1}. ${q.question}
-            </h3>
-
-            <p>
-              <strong>Your Answer:</strong>
-              ${
-                selected === undefined
-                  ? "Not Answered"
-                  : q.options[selected]
-              }
-            </p>
-
-            <p>
-              <strong>Correct Answer:</strong>
-              ${q.options[q.answer]}
-            </p>
-
-            <p>
-              <strong>Status:</strong>
-              ${status}
-            </p>
-
-            <p>
-              <strong>Explanation:</strong>
-              ${q.explanation}
-            </p>
-
-          </div>
-
-        `;
-
-      }).join("")}
-
-    </div>
-  `;
+    startTimer();
 }
 
+// ======================================================
+// CET EXAM UI
+// ======================================================
 
-// ============================================================
-// PALETTE STATUS
-// ============================================================
+function renderCETExam() {
 
-function getMockPaletteClass(id, index) {
+    const section =
+        currentTest.sections[currentSection];
 
-  if (markedQuestions[id]) {
-    return "marked";
-  }
+    const index =
+        currentQuestionIndex[currentSection];
 
-  if (userAnswers[id] !== undefined) {
-    return "answered";
-  }
+    const question =
+        section.questions[index];
 
-  return "not-answered";
+    const isPCPhase =
+        currentPhase === "pc";
+
+    const marks =
+        currentSection === "mathematics"
+            ? 2
+            : 1;
+
+    const app = document.getElementById("app");
+
+    app.innerHTML = `
+
+        <div class="cet-exam">
+
+            <!-- HEADER -->
+
+            <div class="exam-header">
+
+                <div>
+                    <strong>MHT-CET 2027</strong>
+                </div>
+
+                <div>
+                    ${
+                        isPCPhase
+                            ? "PART 1 — PHYSICS + CHEMISTRY"
+                            : "PART 2 — MATHEMATICS"
+                    }
+                </div>
+
+                <div class="timer" id="timer">
+                    90:00
+                </div>
+
+            </div>
+
+
+            <!-- SECTION TABS -->
+
+            <div class="section-tabs">
+
+                <button
+                    class="${currentSection === "physics" ? "active" : ""}"
+                    onclick="switchSection('physics')"
+                    ${!isPCPhase ? "disabled" : ""}
+                >
+                    Physics
+                </button>
+
+                <button
+                    class="${currentSection === "chemistry" ? "active" : ""}"
+                    onclick="switchSection('chemistry')"
+                    ${!isPCPhase ? "disabled" : ""}
+                >
+                    Chemistry
+                </button>
+
+                <button
+                    class="${currentSection === "mathematics" ? "active" : ""}"
+                    onclick="switchSection('mathematics')"
+                    ${isPCPhase ? "disabled" : ""}
+                >
+                    Mathematics
+                </button>
+
+            </div>
+
+
+            <!-- EXAM BODY -->
+
+            <div class="exam-body">
+
+                <!-- QUESTION -->
+
+                <div class="question-area">
+
+                    <div class="question-top">
+
+                        <span>
+                            Question ${index + 1} of 50
+                        </span>
+
+                        <span>
+                            ${marks} Mark${marks > 1 ? "s" : ""}
+                        </span>
+
+                    </div>
+
+                    <div class="question-card">
+
+                        <h2>
+                            ${question.question}
+                        </h2>
+
+                        <div class="exam-options">
+
+                            ${question.options.map(
+                                (option, i) => `
+
+                                <button
+                                    class="${
+                                        section.answers[question.id] === i
+                                            ? "selected"
+                                            : ""
+                                    }"
+
+                                    onclick="selectCETAnswer(${i})"
+                                >
+
+                                    <span>
+                                        ${String.fromCharCode(65 + i)}
+                                    </span>
+
+                                    ${option}
+
+                                </button>
+
+                            `).join("")}
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- CONTROLS -->
+
+                    <div class="exam-controls">
+
+                        <button
+                            onclick="previousCETQuestion()"
+                            ${index === 0 ? "disabled" : ""}
+                        >
+                            Previous
+                        </button>
+
+                        <button onclick="markForReview()">
+                            ${section.marked[question.id]
+                                ? "Unmark Review"
+                                : "Mark for Review"}
+                        </button>
+
+                        <button onclick="clearCETResponse()">
+                            Clear Response
+                        </button>
+
+                        ${
+                            currentSection === "mathematics" &&
+                            index === 49
+                                ? `
+                                    <button
+                                        onclick="submitMockTest()"
+                                    >
+                                        Submit Test
+                                    </button>
+                                `
+                                : `
+                                    <button
+                                        onclick="nextCETQuestion()"
+                                    >
+                                        Save & Next
+                                    </button>
+                                `
+                        }
+
+                    </div>
+
+                </div>
+
+
+                <!-- QUESTION PALETTE -->
+
+                <div class="question-palette">
+
+                    <h3>Question Palette</h3>
+
+                    <div class="palette-info">
+
+                        <span>
+                            🟢 Answered
+                        </span>
+
+                        <span>
+                            ⚪ Not Answered
+                        </span>
+
+                        <span>
+                            🟡 Review
+                        </span>
+
+                    </div>
+
+                    <div class="palette-grid">
+
+                        ${section.questions.map(
+                            (q, i) => {
+
+                                let className = "";
+
+                                if (
+                                    section.marked[q.id]
+                                ) {
+                                    className += " review";
+                                }
+
+                                if (
+                                    section.answers[q.id] !== undefined
+                                ) {
+                                    className += " answered";
+                                }
+
+                                if (
+                                    i === index
+                                ) {
+                                    className += " current";
+                                }
+
+                                return `
+
+                                    <button
+                                        class="${className}"
+                                        onclick="goToCETQuestion(${i})"
+                                    >
+                                        ${i + 1}
+                                    </button>
+
+                                `;
+                            }
+                        ).join("")}
+
+                    </div>
+
+
+                    <div class="phase-info">
+
+                        ${
+                            isPCPhase
+                                ? `
+                                    <strong>Part 1</strong>
+
+                                    <p>
+                                        Physics + Chemistry
+                                    </p>
+
+                                    <p>
+                                        Shared Time: 90 Minutes
+                                    </p>
+
+                                    <p>
+                                        Mathematics is locked.
+                                    </p>
+                                `
+                                : `
+                                    <strong>Part 2</strong>
+
+                                    <p>
+                                        Mathematics
+                                    </p>
+
+                                    <p>
+                                        Time: 90 Minutes
+                                    </p>
+
+                                    <p>
+                                        Physics & Chemistry are locked.
+                                    </p>
+                                `
+                        }
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    `;
+
+    updateTimerDisplay();
 }
 
+// ======================================================
+// SECTION SWITCH
+// ======================================================
 
-function getPaletteClass(id, index) {
+function switchSection(section) {
 
-  if (userAnswers[id] !== undefined) {
-    return "answered";
-  }
+    if (!currentTest) return;
 
-  return "not-answered";
-}
-
-
-// ============================================================
-// PRACTICE RESULT
-// ============================================================
-
-function showPracticeResult() {
-
-  let correct = 0;
-  let wrong = 0;
-  let unanswered = 0;
-
-  currentTest.questions.forEach(q => {
-
-    if (userAnswers[q.id] === undefined) {
-
-      unanswered++;
-
-    } else if (
-      userAnswers[q.id] === q.answer
+    if (
+        currentPhase === "pc" &&
+        (section === "physics" ||
+         section === "chemistry")
     ) {
 
-      correct++;
+        currentSection = section;
 
-    } else {
-
-      wrong++;
+        renderCETExam();
 
     }
 
-  });
+    if (
+        currentPhase === "math" &&
+        section === "mathematics"
+    ) {
 
+        currentSection = section;
 
-  const total =
-    currentTest.questions.length;
+        renderCETExam();
 
-  const accuracy =
-    total
-      ? ((correct / total) * 100).toFixed(2)
-      : 0;
-
-
-  const app = getApp("app");
-
-  app.innerHTML = `
-
-    <div class="result-page">
-
-      <h1>Practice Result</h1>
-
-      <h2>${currentTest.title}</h2>
-
-      <div class="result-summary">
-
-        <div>
-          <strong>${total}</strong>
-          <span>Total</span>
-        </div>
-
-        <div>
-          <strong>${correct}</strong>
-          <span>Correct</span>
-        </div>
-
-        <div>
-          <strong>${wrong}</strong>
-          <span>Wrong</span>
-        </div>
-
-        <div>
-          <strong>${unanswered}</strong>
-          <span>Unanswered</span>
-        </div>
-
-        <div>
-          <strong>${accuracy}%</strong>
-          <span>Accuracy</span>
-        </div>
-
-      </div>
-
-      <button onclick="showChapter('${currentSubject}', '${currentChapter.replace(/'/g, "\\'")}')">
-        Try Again
-      </button>
-
-      <button onclick="showDashboard()">
-        Dashboard
-      </button>
-
-    </div>
-
-  `;
+    }
 }
 
+// ======================================================
+// ANSWER
+// ======================================================
 
-// ============================================================
-// PYQ PAGE
-// ============================================================
+function selectCETAnswer(answerIndex) {
+
+    const section =
+        currentTest.sections[currentSection];
+
+    const index =
+        currentQuestionIndex[currentSection];
+
+    const question =
+        section.questions[index];
+
+    section.answers[question.id] =
+        answerIndex;
+
+    renderCETExam();
+}
+
+// ======================================================
+// NEXT QUESTION
+// ======================================================
+
+function nextCETQuestion() {
+
+    const index =
+        currentQuestionIndex[currentSection];
+
+    if (index < 49) {
+
+        currentQuestionIndex[currentSection]++;
+
+        renderCETExam();
+
+    }
+}
+
+// ======================================================
+// PREVIOUS QUESTION
+// ======================================================
+
+function previousCETQuestion() {
+
+    const index =
+        currentQuestionIndex[currentSection];
+
+    if (index > 0) {
+
+        currentQuestionIndex[currentSection]--;
+
+        renderCETExam();
+
+    }
+}
+
+// ======================================================
+// GO TO QUESTION
+// ======================================================
+
+function goToCETQuestion(index) {
+
+    currentQuestionIndex[currentSection] =
+        index;
+
+    renderCETExam();
+}
+
+// ======================================================
+// MARK FOR REVIEW
+// ======================================================
+
+function markForReview() {
+
+    const section =
+        currentTest.sections[currentSection];
+
+    const index =
+        currentQuestionIndex[currentSection];
+
+    const question =
+        section.questions[index];
+
+    section.marked[question.id] =
+        !section.marked[question.id];
+
+    renderCETExam();
+}
+
+// ======================================================
+// CLEAR RESPONSE
+// ======================================================
+
+function clearCETResponse() {
+
+    const section =
+        currentTest.sections[currentSection];
+
+    const index =
+        currentQuestionIndex[currentSection];
+
+    const question =
+        section.questions[index];
+
+    delete section.answers[question.id];
+
+    renderCETExam();
+}
+
+// ======================================================
+// TIMER
+// ======================================================
+
+function startTimer() {
+
+    stopTimer();
+
+    timerInterval = setInterval(() => {
+
+        remainingSeconds--;
+
+        updateTimerDisplay();
+
+        if (remainingSeconds <= 0) {
+
+            stopTimer();
+
+            if (currentPhase === "pc") {
+
+                startMathematicsPhase();
+
+            } else {
+
+                submitMockTest(true);
+
+            }
+
+        }
+
+    }, 1000);
+}
+
+// ======================================================
+// UPDATE TIMER
+// ======================================================
+
+function updateTimerDisplay() {
+
+    const timer =
+        document.getElementById("timer");
+
+    if (!timer) return;
+
+    const minutes =
+        Math.floor(remainingSeconds / 60);
+
+    const seconds =
+        remainingSeconds % 60;
+
+    timer.textContent =
+        `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+// ======================================================
+// STOP TIMER
+// ======================================================
+
+function stopTimer() {
+
+    if (timerInterval) {
+
+        clearInterval(timerInterval);
+
+        timerInterval = null;
+
+    }
+}
+
+// ======================================================
+// MOVE TO MATHEMATICS
+// ======================================================
+
+function startMathematicsPhase() {
+
+    currentPhase = "math";
+
+    currentSection = "mathematics";
+
+    currentQuestionIndex.mathematics = 0;
+
+    remainingSeconds = 90 * 60;
+
+    renderCETExam();
+
+    startTimer();
+}
+
+// ======================================================
+// SUBMIT MOCK
+// ======================================================
+
+function submitMockTest(autoSubmit = false) {
+
+    if (!autoSubmit) {
+
+        const confirmSubmit =
+            confirm(
+                "Are you sure you want to submit the test?"
+            );
+
+        if (!confirmSubmit) return;
+
+    }
+
+    stopTimer();
+
+    showMockResult();
+}
+
+// ======================================================
+// MOCK RESULT
+// ======================================================
+
+function showMockResult() {
+
+    let result = {
+
+        physics: {
+            correct: 0,
+            wrong: 0,
+            unanswered: 0,
+            marks: 0
+        },
+
+        chemistry: {
+            correct: 0,
+            wrong: 0,
+            unanswered: 0,
+            marks: 0
+        },
+
+        mathematics: {
+            correct: 0,
+            wrong: 0,
+            unanswered: 0,
+            marks: 0
+        }
+
+    };
+
+
+    Object.keys(currentTest.sections).forEach(
+        subject => {
+
+            const section =
+                currentTest.sections[subject];
+
+            section.questions.forEach(
+                question => {
+
+                    const answer =
+                        section.answers[question.id];
+
+                    if (answer === undefined) {
+
+                        result[subject].unanswered++;
+
+                    }
+                    else if (
+                        answer === question.answer
+                    ) {
+
+                        result[subject].correct++;
+
+                        result[subject].marks +=
+                            subject === "mathematics"
+                                ? 2
+                                : 1;
+
+                    }
+                    else {
+
+                        result[subject].wrong++;
+
+                    }
+
+                }
+            );
+
+        }
+    );
+
+
+    const totalMarks =
+        result.physics.marks +
+        result.chemistry.marks +
+        result.mathematics.marks;
+
+    const totalCorrect =
+        result.physics.correct +
+        result.chemistry.correct +
+        result.mathematics.correct;
+
+    const totalWrong =
+        result.physics.wrong +
+        result.chemistry.wrong +
+        result.mathematics.wrong;
+
+    const totalUnanswered =
+        result.physics.unanswered +
+        result.chemistry.unanswered +
+        result.mathematics.unanswered;
+
+
+    const percentage =
+        ((totalMarks / 200) * 100).toFixed(2);
+
+
+    document.getElementById("app").innerHTML = `
+
+        <div class="mock-result">
+
+            <h1>Mock Test Result</h1>
+
+            <div class="total-score">
+
+                <h2>${totalMarks} / 200</h2>
+
+                <p>
+                    ${percentage}%
+                </p>
+
+            </div>
+
+
+            <div class="result-summary">
+
+                <div>
+                    <strong>${totalCorrect}</strong>
+                    <span>Correct</span>
+                </div>
+
+                <div>
+                    <strong>${totalWrong}</strong>
+                    <span>Wrong</span>
+                </div>
+
+                <div>
+                    <strong>${totalUnanswered}</strong>
+                    <span>Unanswered</span>
+                </div>
+
+            </div>
+
+
+            <h2>Subject-wise Performance</h2>
+
+
+            <div class="subject-result">
+
+                <div>
+
+                    <h3>Physics</h3>
+
+                    <p>
+                        Correct:
+                        ${result.physics.correct}
+                    </p>
+
+                    <p>
+                        Wrong:
+                        ${result.physics.wrong}
+                    </p>
+
+                    <p>
+                        Unanswered:
+                        ${result.physics.unanswered}
+                    </p>
+
+                    <strong>
+                        ${result.physics.marks} / 50
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <h3>Chemistry</h3>
+
+                    <p>
+                        Correct:
+                        ${result.chemistry.correct}
+                    </p>
+
+                    <p>
+                        Wrong:
+                        ${result.chemistry.wrong}
+                    </p>
+
+                    <p>
+                        Unanswered:
+                        ${result.chemistry.unanswered}
+                    </p>
+
+                    <strong>
+                        ${result.chemistry.marks} / 50
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <h3>Mathematics</h3>
+
+                    <p>
+                        Correct:
+                        ${result.mathematics.correct}
+                    </p>
+
+                    <p>
+                        Wrong:
+                        ${result.mathematics.wrong}
+                    </p>
+
+                    <p>
+                        Unanswered:
+                        ${result.mathematics.unanswered}
+                    </p>
+
+                    <strong>
+                        ${result.mathematics.marks} / 100
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="result-buttons">
+
+                <button onclick="showMockTests()">
+                    Take Another Mock
+                </button>
+
+                <button onclick="showDashboard()">
+                    Dashboard
+                </button>
+
+            </div>
+
+        </div>
+    `;
+}
+
+// ======================================================
+// PYQ
+// ======================================================
 
 function showPYQTests() {
 
-  const app = getApp("app");
+    stopTimer();
 
-  if (!app) return;
+    const app =
+        document.getElementById("app");
 
-  const tests =
-    window.pyqTests || [];
+    app.innerHTML = `
 
-  app.innerHTML = `
+        <div class="page">
 
-    <div class="page">
+            <button onclick="showDashboard()">
+                ← Back
+            </button>
 
-      <button onclick="showDashboard()">
-        ← Dashboard
-      </button>
+            <h1>MHT-CET PYQ Tests</h1>
 
-      <h1>Previous Year Questions</h1>
+            <p>
+                Previous-year question tests will appear here.
+            </p>
 
-      <div class="mock-grid">
+            <div class="pyq-grid">
 
-        ${tests.map(test => `
+                ${pyqTests.map(test => `
 
-          <button
-            onclick="startPYQ('${test.id}')"
-          >
+                    <div class="pyq-card">
 
-            <strong>
-              ${test.title}
-            </strong>
+                        <h3>
+                            MHT-CET ${test.year}
+                        </h3>
 
-            <span>
-              ${test.year}
-            </span>
+                        <p>
+                            Full Paper
+                        </p>
 
-          </button>
+                        <button
+                            onclick="startPYQ(${test.id})"
+                        >
+                            Start PYQ
+                        </button>
 
-        `).join("")}
+                    </div>
 
-      </div>
+                `).join("")}
 
-    </div>
-  `;
+            </div>
+
+        </div>
+    `;
 }
-
 
 function startPYQ(id) {
 
-  const test =
-    (window.pyqTests || [])
-      .find(t => t.id === id);
-
-  if (!test) {
-
-    alert("PYQ test not found.");
-
-    return;
-  }
-
-  alert(
-    "This PYQ section is ready for verified PYQ questions to be added."
-  );
+    alert(
+        "This PYQ test is ready for verified PYQ questions to be added."
+    );
 }
 
-
-// ============================================================
+// ======================================================
 // PERFORMANCE
-// ============================================================
+// ======================================================
 
 function showPerformance() {
 
-  const app = getApp("app");
+    stopTimer();
 
-  if (!app) return;
+    document.getElementById("app").innerHTML = `
 
-  app.innerHTML = `
+        <div class="page">
 
-    <div class="page">
+            <button onclick="showDashboard()">
+                ← Back
+            </button>
 
-      <button onclick="showDashboard()">
-        ← Dashboard
-      </button>
+            <h1>Performance</h1>
 
-      <h1>Performance</h1>
+            <div class="performance-card">
 
-      <div class="result-card">
+                <h2>Your Performance</h2>
 
-        <h2>Practice Performance</h2>
+                <p>
+                    Mock-test performance tracking will appear here
+                    after you complete tests.
+                </p>
 
-        <p>
-          Complete chapter tests and mock tests to build
-          your performance history.
-        </p>
+            </div>
 
-      </div>
-
-    </div>
-
-  `;
+        </div>
+    `;
 }
 
+// ======================================================
+// START DASHBOARD
+// ======================================================
 
-// ============================================================
-// START APPLICATION
-// ============================================================
-
-document.addEventListener("DOMContentLoaded", () => {
-
-  showDashboard();
-
-});
+showDashboard();
