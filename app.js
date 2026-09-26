@@ -316,15 +316,18 @@ function checkPracticeAnswer(index) {
 
   if (index === q.answer) {
 
-    feedback.style.display = "block";
+    savePracticeProgress(true);
 
+    feedback.style.display = "block";
     feedback.innerHTML =
       "✅ <strong>Correct!</strong><br><br>" +
       (q.explanation || "Good job!");
 
   }
 
-  else {
+ else {
+
+    savePracticeProgress(false);
 
     feedback.style.display = "block";
 
