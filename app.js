@@ -1,1067 +1,807 @@
 /* =========================================================
-   MHT-CET 2027 PRACTICE PORTAL - APP.JS
-   ========================================================= */
+   MHT-CET 2027 PRACTICE PORTAL
+   app.js
+========================================================= */
 
-/* =========================
-   DATA
-========================= */
+(() => {
 
-const questionBank = window.questions || [];
-const chapterCatalog = window.chapterCatalog || {};
-const mockTests = window.mockTests || [];
-const pyqTests = window.pyqTests || [];
+    "use strict";
 
-let currentTest = null;
+    /* -----------------------------------------------------
+       DATA FROM questions.js
+    ----------------------------------------------------- */
 
-let selectedSubject = "";
-let selectedChapter = "";
-let selectedDifficulty = "";
-
-let practiceQuestions = [];
-let practiceIndex = 0;
-
-let timerInterval = null;
-let remainingSeconds = 0;
-
-let currentSection = "physics";
-let currentQuestionIndex = {
-    physics: 0,
-    chemistry: 0,
-    mathematics: 0
-};
-
-let currentPhase = "pc";
+    const questionBank = window.questions || [];
+    const chapters = window.chapterCatalog || {};
+    const mockTests = window.mockTests || [];
+    const pyqTests = window.pyqTests || [];
 
 
-/* =========================================================
-   UTILITY FUNCTIONS
-   ========================================================= */
+    /* -----------------------------------------------------
+       APPLICATION STATE
+    ----------------------------------------------------- */
 
-function shuffle(array) {
-    const arr = [...array];
+    let currentSubject = "";
+    let currentChapter = "";
 
-    for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+    let practiceQuestions = [];
+    let practiceIndex = 0;
+    let practiceDifficulty = "All";
 
-        [arr[i], arr[j]] = [arr[j], arr[i]];
+    let currentMock = null;
+
+    let examPhase = "pc";
+    let examSubject = "Physics";
+    let examIndex = 0;
+
+    let examTimer = null;
+    let remainingSeconds = 0;
+
+    let examData = {
+        Physics: {
+            questions: [],
+            answers: [],
+            marked: []
+        },
+
+        Chemistry: {
+            questions: [],
+            answers: [],
+            marked: []
+        },
+
+        Mathematics: {
+            questions: [],
+            answers: [],
+            marked: []
+        }
+    };
+
+
+    /* -----------------------------------------------------
+       LOCAL STORAGE
+    ----------------------------------------------------- */
+
+    const STORAGE_KEY = "mhtcet2027_performance";
+
+
+    function getPerformanceData() {
+
+        const saved = localStorage.getItem(STORAGE_KEY);
+
+        if (!saved) {
+
+            return {
+                attempted: 0,
+                correct: 0,
+                wrong: 0,
+                subject: {
+                    Physics: {
+                        attempted: 0,
+                        correct: 0
+                    },
+                    Chemistry: {
+                        attempted: 0,
+                        correct: 0
+                    },
+                    Mathematics: {
+                        attempted: 0,
+                        correct: 0
+                    }
+                },
+                mockHistory: []
+            };
+        }
+
+        try {
+            return JSON.parse(saved);
+        } catch {
+            return {
+                attempted: 0,
+                correct: 0,
+                wrong: 0,
+                subject: {
+                    Physics: {
+                        attempted: 0,
+                        correct: 0
+                    },
+                    Chemistry: {
+                        attempted: 0,
+                        correct: 0
+                    },
+                    Mathematics: {
+                        attempted: 0,
+                        correct: 0
+                    }
+                },
+                mockHistory: []
+            };
+        }
     }
 
-    return arr;
-}
 
-
-function formatTime(seconds) {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-
-    return (
-        String(hrs).padStart(2, "0") +
-        ":" +
-        String(mins).padStart(2, "0") +
-        ":" +
-        String(secs).padStart(2, "0")
-    );
-}
-
-
-function hideAllPages() {
-    document.querySelectorAll(".page").forEach(page => {
-        page.style.display = "none";
-    });
-}
-
-
-function showPage(id) {
-    hideAllPages();
-
-    const page = document.getElementById(id);
-
-    if (page) {
-        page.style.display = "block";
+    function savePerformance(data) {
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(data)
+        );
     }
 
-    window.scrollTo(0, 0);
-}
 
+    /* =====================================================
+       PAGE NAVIGATION
+    ===================================================== */
 
-/* =========================================================
-   LOCAL STORAGE / PERFORMANCE
-========================= */
+    function showPage(pageName) {
 
-function getStats() {
-    return JSON.parse(
-        localStorage.getItem("mhtCETStats") ||
-        JSON.stringify({
-            questions: 0,
-            correct: 0,
-            wrong: 0,
-            tests: 0,
-            mockTests: [],
-            subject: {
-                Physics: { questions: 0, correct: 0 },
-                Chemistry: { questions: 0, correct: 0 },
-                Mathematics: { questions: 0, correct: 0 }
-            }
-        })
-    );
-}
+        document.querySelectorAll(".page").forEach(page => {
+            page.classList.remove("active");
+        });
 
+        const page = document.getElementById(
+            `${pageName}Page`
+        );
 
-function saveStats(stats) {
-    localStorage.setItem("mhtCETStats", JSON.stringify(stats));
-}
+        if (page) {
+            page.classList.add("active");
+        }
 
-
-function updateStats(correct, wrong, answered, subjectResults = null) {
-    const stats = getStats();
-
-    stats.questions += answered;
-    stats.correct += correct;
-    stats.wrong += wrong;
-
-    if (subjectResults) {
-        Object.keys(subjectResults).forEach(subject => {
-
-            if (!stats.subject[subject]) {
-                stats.subject[subject] = {
-                    questions: 0,
-                    correct: 0
-                };
-            }
-
-            stats.subject[subject].questions +=
-                subjectResults[subject].answered;
-
-            stats.subject[subject].correct +=
-                subjectResults[subject].correct;
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
         });
     }
 
-    saveStats(stats);
 
-    updateDashboardStats();
-}
+    /* =====================================================
+       HOME
+    ===================================================== */
 
+    function initializePortal() {
 
-function updateTestCount() {
-    const stats = getStats();
+        const totalQuestions =
+            document.getElementById("totalQuestionsStat");
 
-    stats.tests += 1;
+        const totalChapters =
+            document.getElementById("totalChaptersStat");
 
-    saveStats(stats);
-}
-
-
-function updateDashboardStats() {
-    const stats = getStats();
-
-    const attempted = document.getElementById("questionsAttempted");
-    const tests = document.getElementById("testsCompleted");
-    const accuracy = document.getElementById("accuracy");
-
-    if (attempted) {
-        attempted.textContent = stats.questions;
-    }
-
-    if (tests) {
-        tests.textContent = stats.tests;
-    }
-
-    if (accuracy) {
-        const acc =
-            stats.questions > 0
-                ? Math.round((stats.correct / stats.questions) * 100)
-                : 0;
-
-        accuracy.textContent = acc + "%";
-    }
-
-    updateStreakDisplay();
-}
-
-
-function updateStreakDisplay() {
-    const streak = Number(
-        localStorage.getItem("mhtCETStreak") || 0
-    );
-
-    const element = document.getElementById("studyStreak");
-
-    if (element) {
-        element.textContent = streak;
-    }
-}
-
-
-function recordStudyActivity() {
-    const today = new Date().toISOString().split("T")[0];
-
-    const lastDate =
-        localStorage.getItem("mhtCETLastStudyDate");
-
-    let streak = Number(
-        localStorage.getItem("mhtCETStreak") || 0
-    );
-
-    if (lastDate === today) {
-        return;
-    }
-
-    if (lastDate) {
-        const oldDate = new Date(lastDate);
-        const currentDate = new Date(today);
-
-        const difference =
-            Math.round(
-                (currentDate - oldDate) /
-                (1000 * 60 * 60 * 24)
-            );
-
-        if (difference === 1) {
-            streak++;
-        } else {
-            streak = 1;
+        if (totalQuestions) {
+            totalQuestions.textContent =
+                questionBank.length;
         }
-    } else {
-        streak = 1;
+
+        if (totalChapters) {
+
+            let count = 0;
+
+            Object.values(chapters).forEach(list => {
+                count += list.length;
+            });
+
+            totalChapters.textContent = count;
+        }
+
+        updatePerformancePage();
+
+        showPage("home");
     }
 
-    localStorage.setItem("mhtCETStreak", streak);
-    localStorage.setItem("mhtCETLastStudyDate", today);
 
-    updateStreakDisplay();
-}
+    /* =====================================================
+       PRACTICE SUBJECTS
+    ===================================================== */
 
-
-/* =========================================================
-   HOME
-========================= */
-
-function goHome() {
-    stopTimer();
-
-    showPage("home");
-
-    updateDashboardStats();
-}
-
-
-function showDashboard() {
-    goHome();
-}
-
-
-/* =========================================================
-   PRACTICE
-========================= */
-
-function showPractice() {
-    showPage("practice");
-
-    document.getElementById("subjectSelection").style.display = "block";
-    document.getElementById("chapterSection").style.display = "none";
-    document.getElementById("difficultySection").style.display = "none";
-    document.getElementById("practiceQuestion").style.display = "none";
-}
-
-
-function selectSubject(subject) {
-
-    selectedSubject = subject;
-
-    document.getElementById("selectedSubject").textContent =
-        subject;
-
-    document.getElementById("subjectSelection").style.display =
-        "none";
-
-    document.getElementById("chapterSection").style.display =
-        "block";
-
-    document.getElementById("difficultySection").style.display =
-        "none";
-
-    document.getElementById("practiceQuestion").style.display =
-        "none";
-
-    renderChapters(subject);
-}
-
-
-function renderChapters(subject) {
-
-    const container =
-        document.getElementById("chapterList");
-
-    container.innerHTML = "";
-
-    const chapters = chapterCatalog[subject] || [];
-
-    if (chapters.length === 0) {
-
-        container.innerHTML =
-            "<p>No chapters available.</p>";
-
-        return;
+    function showPractice() {
+        showPage("practice");
     }
 
-    chapters.forEach((chapter, index) => {
 
-        const button = document.createElement("button");
+    function selectSubject(subject) {
 
-        button.className = "chapter-card";
+        currentSubject = subject;
 
-        button.innerHTML = `
-            <span>Chapter ${index + 1}</span>
-            <strong>${chapter}</strong>
-            <small>30 Questions</small>
-        `;
+        const title =
+            document.getElementById("chapterPageTitle");
 
-        button.onclick = function () {
-            selectChapter(chapter);
-        };
+        const subtitle =
+            document.getElementById("chapterPageSubtitle");
 
-        container.appendChild(button);
-    });
-}
+        if (title) {
+            title.textContent =
+                `${subject} Chapters`;
+        }
 
+        if (subtitle) {
+            subtitle.textContent =
+                `Choose a chapter to practice ${subject}.`;
+        }
 
-function backToSubjects() {
+        renderChapters(subject);
 
-    document.getElementById("subjectSelection").style.display =
-        "block";
-
-    document.getElementById("chapterSection").style.display =
-        "none";
-
-    document.getElementById("difficultySection").style.display =
-        "none";
-
-    document.getElementById("practiceQuestion").style.display =
-        "none";
-}
-
-
-function selectChapter(chapter) {
-
-    selectedChapter = chapter;
-
-    document.getElementById("selectedChapter").textContent =
-        chapter;
-
-    document.getElementById("chapterSection").style.display =
-        "none";
-
-    document.getElementById("difficultySection").style.display =
-        "block";
-
-    document.getElementById("practiceQuestion").style.display =
-        "none";
-}
-
-
-function backToChapters() {
-
-    document.getElementById("difficultySection").style.display =
-        "none";
-
-    document.getElementById("chapterSection").style.display =
-        "block";
-
-    renderChapters(selectedSubject);
-}
-
-
-function backToDifficulty() {
-
-    document.getElementById("practiceQuestion").style.display =
-        "none";
-
-    document.getElementById("difficultySection").style.display =
-        "block";
-}
-
-
-function startChapterPractice(difficulty) {
-
-    selectedDifficulty = difficulty;
-
-    practiceQuestions = questionBank.filter(q =>
-        q.subject === selectedSubject &&
-        q.chapter === selectedChapter &&
-        q.difficulty === difficulty
-    );
-
-    practiceQuestions = shuffle(practiceQuestions);
-
-    if (practiceQuestions.length === 0) {
-
-        alert(
-            "No questions are available for this chapter and difficulty."
-        );
-
-        return;
+        showPage("chapters");
     }
 
-    practiceIndex = 0;
 
-    document.getElementById("difficultySection").style.display =
-        "none";
+    /* =====================================================
+       CHAPTER LIST
+    ===================================================== */
 
-    document.getElementById("practiceQuestion").style.display =
-        "block";
+    function renderChapters(subject) {
 
-    recordStudyActivity();
+        const container =
+            document.getElementById("chapterList");
 
-    renderPracticeQuestion();
-}
+        if (!container) return;
 
+        container.innerHTML = "";
 
-function renderPracticeQuestion() {
+        const subjectChapters =
+            chapters[subject] || [];
 
-    const question =
-        practiceQuestions[practiceIndex];
+        subjectChapters.forEach((chapter, index) => {
 
-    if (!question) {
-        return;
-    }
+            const wrapper =
+                document.createElement("div");
 
-    document.getElementById("practiceQuestionNumber").textContent =
-        `Question ${practiceIndex + 1} of ${practiceQuestions.length}`;
+            wrapper.className = "chapter-item";
 
-    document.getElementById("practiceChapter").textContent =
-        question.chapter;
+            wrapper.innerHTML = `
 
-    document.getElementById("practiceDifficulty").textContent =
-        question.difficulty;
+                <div class="chapter-info">
 
-    document.getElementById("practiceQuestionText").textContent =
-        question.question;
-
-    const optionsContainer =
-        document.getElementById("practiceOptions");
-
-    optionsContainer.innerHTML = "";
-
-    const feedback =
-        document.getElementById("practiceFeedback");
-
-    feedback.innerHTML = "";
-
-    question.options.forEach((option, index) => {
-
-        const button = document.createElement("button");
-
-        button.className = "option-btn";
-
-        button.textContent =
-            String.fromCharCode(65 + index) +
-            ". " +
-            option;
-
-        button.onclick = function () {
-
-            const correct =
-                index === question.answer;
-
-            document
-                .querySelectorAll("#practiceOptions .option-btn")
-                .forEach(btn => {
-                    btn.disabled = true;
-                });
-
-            if (correct) {
-
-                button.classList.add("correct");
-
-                feedback.innerHTML = `
-                    <div class="correct-feedback">
-                        ✓ Correct Answer
-                        <p>${question.explanation || ""}</p>
+                    <div class="chapter-number">
+                        ${index + 1}
                     </div>
-                `;
 
-            } else {
+                    <div>
+                        <h3>${escapeHTML(chapter)}</h3>
 
-                button.classList.add("wrong");
-
-                const correctButton =
-                    document.querySelectorAll(
-                        "#practiceOptions .option-btn"
-                    )[question.answer];
-
-                if (correctButton) {
-                    correctButton.classList.add("correct");
-                }
-
-                feedback.innerHTML = `
-                    <div class="wrong-feedback">
-                        ✗ Wrong Answer
                         <p>
-                            Correct answer:
-                            ${String.fromCharCode(65 + question.answer)}
-                            <br>
-                            ${question.explanation || ""}
+                            30 Questions •
+                            10 Easy •
+                            10 Medium •
+                            10 Hard
                         </p>
                     </div>
+
+                </div>
+
+                <button>
+                    Practice →
+                </button>
+            `;
+
+            wrapper.querySelector("button")
+                .addEventListener("click", () => {
+                    startChapterPractice(
+                        subject,
+                        chapter
+                    );
+                });
+
+            container.appendChild(wrapper);
+        });
+    }
+
+
+    /* =====================================================
+       CHAPTER PRACTICE
+    ===================================================== */
+
+    function startChapterPractice(
+        subject,
+        chapter
+    ) {
+
+        currentSubject = subject;
+        currentChapter = chapter;
+
+        practiceDifficulty = "All";
+
+        practiceQuestions =
+            questionBank.filter(q =>
+                q.subject === subject &&
+                q.chapter === chapter
+            );
+
+        practiceIndex = 0;
+
+        if (!practiceQuestions.length) {
+
+            alert(
+                "No questions are available for this chapter."
+            );
+
+            return;
+        }
+
+        document.getElementById(
+            "practiceChapterTitle"
+        ).textContent = chapter;
+
+        updateDifficultyButtons();
+
+        renderPracticeQuestion();
+
+        showPage("practiceQuestions");
+    }
+
+
+    function filterPracticeDifficulty(
+        difficulty
+    ) {
+
+        practiceDifficulty = difficulty;
+
+        practiceIndex = 0;
+
+        updateDifficultyButtons();
+
+        renderPracticeQuestion();
+    }
+
+
+    function getFilteredPracticeQuestions() {
+
+        if (practiceDifficulty === "All") {
+            return practiceQuestions;
+        }
+
+        return practiceQuestions.filter(
+            q => q.difficulty === practiceDifficulty
+        );
+    }
+
+
+    function updateDifficultyButtons() {
+
+        const buttons = {
+            All: "difficultyAll",
+            Easy: "difficultyEasy",
+            Medium: "difficultyMedium",
+            Hard: "difficultyHard"
+        };
+
+        Object.keys(buttons).forEach(level => {
+
+            const button =
+                document.getElementById(
+                    buttons[level]
+                );
+
+            if (!button) return;
+
+            button.classList.toggle(
+                "active",
+                level === practiceDifficulty
+            );
+        });
+    }
+
+
+    function renderPracticeQuestion() {
+
+        const list =
+            getFilteredPracticeQuestions();
+
+        if (!list.length) return;
+
+        if (practiceIndex >= list.length) {
+            practiceIndex = list.length - 1;
+        }
+
+        if (practiceIndex < 0) {
+            practiceIndex = 0;
+        }
+
+        const question =
+            list[practiceIndex];
+
+        document.getElementById(
+            "practiceQuestionNumber"
+        ).textContent =
+            `Q${practiceIndex + 1}`;
+
+        document.getElementById(
+            "practiceProgress"
+        ).textContent =
+            `Question ${practiceIndex + 1} of ${list.length}`;
+
+        document.getElementById(
+            "practiceDifficulty"
+        ).textContent =
+            question.difficulty;
+
+        document.getElementById(
+            "practiceQuestion"
+        ).textContent =
+            question.question;
+
+        const options =
+            document.getElementById(
+                "practiceOptions"
+            );
+
+        options.innerHTML = "";
+
+        question.options.forEach(
+            (option, index) => {
+
+                const button =
+                    document.createElement("button");
+
+                button.className = "option";
+
+                button.innerHTML = `
+                    <strong>
+                        ${String.fromCharCode(65 + index)}.
+                    </strong>
+                    ${escapeHTML(option)}
                 `;
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        showPracticeAnswer(
+                            question,
+                            index
+                        );
+
+                    }
+                );
+
+                options.appendChild(button);
+            }
+        );
+
+        const explanation =
+            document.getElementById(
+                "practiceExplanation"
+            );
+
+        explanation.classList.add("hidden");
+
+        explanation.innerHTML = "";
+
+        renderPracticePalette(list);
+    }
+
+
+    function showPracticeAnswer(
+        question,
+        selectedIndex
+    ) {
+
+        const optionButtons =
+            document.querySelectorAll(
+                "#practiceOptions .option"
+            );
+
+        optionButtons.forEach(
+            (button, index) => {
+
+                button.disabled = true;
+
+                if (index === question.answer) {
+                    button.classList.add("correct");
+                }
+
+                if (
+                    index === selectedIndex &&
+                    index !== question.answer
+                ) {
+                    button.classList.add("wrong");
+                }
+            }
+        );
+
+        const explanation =
+            document.getElementById(
+                "practiceExplanation"
+            );
+
+        const correct =
+            selectedIndex === question.answer;
+
+        explanation.innerHTML = `
+            <strong>
+                ${correct ? "Correct! ✓" : "Incorrect ✗"}
+            </strong>
+            <br><br>
+            ${escapeHTML(question.explanation)}
+        `;
+
+        explanation.classList.remove("hidden");
+
+        recordPracticePerformance(
+            question,
+            correct
+        );
+    }
+
+
+    function renderPracticePalette(list) {
+
+        const palette =
+            document.getElementById(
+                "practiceQuestionPalette"
+            );
+
+        if (!palette) return;
+
+        palette.innerHTML = "";
+
+        list.forEach((question, index) => {
+
+            const button =
+                document.createElement("button");
+
+            button.className =
+                "palette-question";
+
+            button.textContent =
+                index + 1;
+
+            if (index === practiceIndex) {
+                button.classList.add("current");
             }
 
-            savePracticeAttempt(correct);
-        };
+            button.addEventListener(
+                "click",
+                () => {
 
-        optionsContainer.appendChild(button);
-    });
-}
+                    practiceIndex = index;
 
+                    renderPracticeQuestion();
+                }
+            );
 
-function savePracticeAttempt(correct) {
-
-    const key = "mhtCETPracticeAttempts";
-
-    const attempts = JSON.parse(
-        localStorage.getItem(key) || "[]"
-    );
-
-    const question =
-        practiceQuestions[practiceIndex];
-
-    attempts.push({
-        questionId: question.id,
-        subject: question.subject,
-        chapter: question.chapter,
-        correct: correct,
-        date: new Date().toISOString()
-    });
-
-    localStorage.setItem(
-        key,
-        JSON.stringify(attempts)
-    );
-
-    const stats = getStats();
-
-    stats.questions++;
-
-    if (correct) {
-        stats.correct++;
-    } else {
-        stats.wrong++;
+            palette.appendChild(button);
+        });
     }
 
-    if (!stats.subject[question.subject]) {
-        stats.subject[question.subject] = {
-            questions: 0,
-            correct: 0
-        };
-    }
 
-    stats.subject[question.subject].questions++;
+    function nextPracticeQuestion() {
 
-    if (correct) {
-        stats.subject[question.subject].correct++;
-    }
+        const list =
+            getFilteredPracticeQuestions();
 
-    saveStats(stats);
+        if (practiceIndex < list.length - 1) {
 
-    updateDashboardStats();
-}
+            practiceIndex++;
 
+            renderPracticeQuestion();
 
-function nextPracticeQuestion() {
+        } else {
 
-    if (
-        practiceIndex <
-        practiceQuestions.length - 1
-    ) {
-        practiceIndex++;
-
-        renderPracticeQuestion();
-
-    } else {
-
-        alert("You have completed this practice set!");
-
-        backToDifficulty();
-    }
-}
-
-
-function previousPracticeQuestion() {
-
-    if (practiceIndex > 0) {
-
-        practiceIndex--;
-
-        renderPracticeQuestion();
-
-    }
-}
-
-
-/* =========================================================
-   MOCK TESTS
-========================= */
-
-function showMockTests() {
-
-    showPage("mockTests");
-
-    const list =
-        document.getElementById("mockTestList");
-
-    list.innerHTML = "";
-
-    if (mockTests.length === 0) {
-
-        for (let i = 1; i <= 50; i++) {
-            createMockCard(
-                {
-                    id: `MOCK-${String(i).padStart(2, "0")}`,
-                    title: `MHT-CET Mock Test ${i}`,
-                    durationMinutes: 180,
-                    questionCount: 150
-                },
-                list
+            alert(
+                "You have reached the last question."
             );
         }
-
-        return;
     }
 
-    mockTests.forEach(test => {
-        createMockCard(test, list);
-    });
-}
 
+    function previousPracticeQuestion() {
 
-function createMockCard(test, container) {
+        if (practiceIndex > 0) {
 
-    const card = document.createElement("div");
+            practiceIndex--;
 
-    card.className = "test-card";
+            renderPracticeQuestion();
 
-    card.innerHTML = `
-        <div>
-            <h3>${test.title}</h3>
-
-            <p>
-                150 Questions • 180 Minutes
-            </p>
-
-            <small>
-                Physics 50 • Chemistry 50 • Mathematics 50
-            </small>
-        </div>
-
-        <button>
-            Start Test
-        </button>
-    `;
-
-    card.querySelector("button").onclick = function () {
-        startCETMock(test.id);
-    };
-
-    container.appendChild(card);
-}
-
-
-function getQuestionsForSubject(subject, count) {
-
-    const available =
-        questionBank.filter(
-            q => q.subject === subject
-        );
-
-    return shuffle(available).slice(0, count);
-}
-
-
-function startCETMock(testId) {
-
-    const physics =
-        getQuestionsForSubject("Physics", 50);
-
-    const chemistry =
-        getQuestionsForSubject("Chemistry", 50);
-
-    const mathematics =
-        getQuestionsForSubject("Mathematics", 50);
-
-    if (
-        physics.length < 50 ||
-        chemistry.length < 50 ||
-        mathematics.length < 50
-    ) {
-
-        alert(
-            "The question bank does not contain enough questions to create the full 150-question test."
-        );
-
-        return;
-    }
-
-    const testInfo =
-        mockTests.find(test => test.id === testId);
-
-    currentTest = {
-
-        id: testId,
-
-        title:
-            testInfo?.title ||
-            "MHT-CET Mock Test",
-
-        sections: {
-
-            physics: {
-                subject: "Physics",
-                questions: physics,
-                answers: Array(50).fill(null),
-                marked: Array(50).fill(false)
-            },
-
-            chemistry: {
-                subject: "Chemistry",
-                questions: chemistry,
-                answers: Array(50).fill(null),
-                marked: Array(50).fill(false)
-            },
-
-            mathematics: {
-                subject: "Mathematics",
-                questions: mathematics,
-                answers: Array(50).fill(null),
-                marked: Array(50).fill(false)
-            }
-        }
-    };
-
-    currentSection = "physics";
-
-    currentPhase = "pc";
-
-    currentQuestionIndex = {
-        physics: 0,
-        chemistry: 0,
-        mathematics: 0
-    };
-
-    remainingSeconds = 90 * 60;
-
-    showPage("exam");
-
-    renderExam();
-
-    startTimer();
-
-    recordStudyActivity();
-}
-
-
-/* =========================================================
-   EXAM SCREEN
-========================= */
-
-function renderExam() {
-
-    if (!currentTest) {
-        return;
-    }
-
-    const section =
-        currentTest.sections[currentSection];
-
-    const index =
-        currentQuestionIndex[currentSection];
-
-    const question =
-        section.questions[index];
-
-    document.getElementById("examTitle").textContent =
-        currentTest.title;
-
-    document.getElementById("subjectName").textContent =
-        section.subject;
-
-    document.getElementById("questionNumber").textContent =
-        `Question ${index + 1} of ${section.questions.length}`;
-
-    document.getElementById("questionText").textContent =
-        question.question;
-
-    const answer =
-        section.answers[index];
-
-    const status =
-        document.getElementById("questionStatus");
-
-    if (answer === null) {
-        status.textContent = "Not Answered";
-    } else {
-        status.textContent = "Answered";
-    }
-
-    renderOptions(section, question, index);
-
-    renderQuestionPalette();
-}
-
-
-function renderOptions(section, question, index) {
-
-    const container =
-        document.getElementById("options");
-
-    container.innerHTML = "";
-
-    question.options.forEach((option, optionIndex) => {
-
-        const button =
-            document.createElement("button");
-
-        button.className = "option-btn";
-
-        button.textContent =
-            String.fromCharCode(65 + optionIndex) +
-            ". " +
-            option;
-
-        if (
-            section.answers[index] ===
-            optionIndex
-        ) {
-            button.classList.add("selected");
-        }
-
-        button.onclick = function () {
-
-            section.answers[index] =
-                optionIndex;
-
-            renderExam();
-        };
-
-        container.appendChild(button);
-    });
-}
-
-
-function renderQuestionPalette() {
-
-    const container =
-        document.getElementById("questionNumbers");
-
-    container.innerHTML = "";
-
-    if (!currentTest) {
-        return;
-    }
-
-    const section =
-        currentTest.sections[currentSection];
-
-    section.questions.forEach((question, index) => {
-
-        const button =
-            document.createElement("button");
-
-        button.textContent = index + 1;
-
-        const answer =
-            section.answers[index];
-
-        if (answer !== null) {
-            button.classList.add("answered");
         } else {
-            button.classList.add("unanswered");
+
+            alert(
+                "This is the first question."
+            );
+        }
+    }
+
+
+    function goBackToChapters() {
+
+        selectSubject(currentSubject);
+    }
+
+
+    /* =====================================================
+       PERFORMANCE RECORDING
+    ===================================================== */
+
+    function recordPracticePerformance(
+        question,
+        correct
+    ) {
+
+        const data =
+            getPerformanceData();
+
+        data.attempted++;
+
+        if (correct) {
+            data.correct++;
+        } else {
+            data.wrong++;
         }
 
-        if (section.marked[index]) {
-            button.classList.add("review");
+        if (!data.subject[question.subject]) {
+
+            data.subject[question.subject] = {
+                attempted: 0,
+                correct: 0
+            };
         }
 
-        if (
-            index ===
-            currentQuestionIndex[currentSection]
-        ) {
-            button.classList.add("active");
+        data.subject[
+            question.subject
+        ].attempted++;
+
+        if (correct) {
+
+            data.subject[
+                question.subject
+            ].correct++;
         }
 
-        button.onclick = function () {
+        savePerformance(data);
 
-            currentQuestionIndex[currentSection] =
-                index;
+        updatePerformancePage();
+    }
 
-            renderExam();
+
+    /* =====================================================
+       MOCK TESTS
+    ===================================================== */
+
+    function showMockTests() {
+
+        renderMockTests();
+
+        showPage("mockTests");
+    }
+
+
+    function renderMockTests() {
+
+        const container =
+            document.getElementById(
+                "mockTestList"
+            );
+
+        if (!container) return;
+
+        container.innerHTML = "";
+
+        mockTests.forEach(test => {
+
+            const card =
+                document.createElement("div");
+
+            card.className = "test-card";
+
+            card.innerHTML = `
+
+                <div class="test-card-info">
+
+                    <h3>
+                        ${escapeHTML(test.title)}
+                    </h3>
+
+                    <p>
+                        150 Questions •
+                        200 Marks •
+                        180 Minutes
+                    </p>
+
+                </div>
+
+                <button>
+                    Start Test
+                </button>
+            `;
+
+            card.querySelector("button")
+                .addEventListener(
+                    "click",
+                    () => {
+                        startMockTest(test.id);
+                    }
+                );
+
+            container.appendChild(card);
+        });
+    }
+
+
+    function startMockTest(testId) {
+
+        const test =
+            mockTests.find(
+                item => item.id === testId
+            );
+
+        if (!test) {
+            alert("Test not found.");
+            return;
+        }
+
+        const confirmed =
+            confirm(
+                `Start ${test.title}?\n\n` +
+                `150 Questions\n` +
+                `200 Marks\n` +
+                `180 Minutes`
+            );
+
+        if (!confirmed) return;
+
+        currentMock = test;
+
+        const physics =
+            getRandomQuestions(
+                "Physics",
+                50
+            );
+
+        const chemistry =
+            getRandomQuestions(
+                "Chemistry",
+                50
+            );
+
+        const mathematics =
+            getRandomQuestions(
+                "Mathematics",
+                50
+            );
+
+        examData = {
+
+            Physics: {
+                questions: physics,
+                answers: new Array(50).fill(null),
+                marked: new Array(50).fill(false)
+            },
+
+            Chemistry: {
+                questions: chemistry,
+                answers: new Array(50).fill(null),
+                marked: new Array(50).fill(false)
+            },
+
+            Mathematics: {
+                questions: mathematics,
+                answers: new Array(50).fill(null),
+                marked: new Array(50).fill(false)
+            }
         };
 
-        container.appendChild(button);
-    });
-}
+        examPhase = "pc";
+        examSubject = "Physics";
+        examIndex = 0;
 
-
-function previousQuestion() {
-
-    const index =
-        currentQuestionIndex[currentSection];
-
-    if (index > 0) {
-
-        currentQuestionIndex[currentSection]--;
+        startTimer(90 * 60);
 
         renderExam();
 
-    } else {
-
-        if (
-            currentSection === "chemistry"
-        ) {
-
-            currentSection = "physics";
-
-            currentQuestionIndex.physics = 49;
-
-            renderExam();
-
-        } else if (
-            currentSection === "mathematics"
-        ) {
-
-            currentSection = "chemistry";
-
-            currentQuestionIndex.chemistry = 49;
-
-            renderExam();
-        }
-    }
-}
-
-
-function nextQuestion() {
-
-    const index =
-        currentQuestionIndex[currentSection];
-
-    const section =
-        currentTest.sections[currentSection];
-
-    if (
-        index <
-        section.questions.length - 1
-    ) {
-
-        currentQuestionIndex[currentSection]++;
-
-        renderExam();
-
-        return;
+        showPage("exam");
     }
 
-    if (currentPhase === "pc") {
 
-        if (currentSection === "physics") {
+    /* =====================================================
+       EXAM TIMER
+    ===================================================== */
 
-            currentSection = "chemistry";
+    function startTimer(seconds) {
 
-            currentQuestionIndex.chemistry = 0;
+        stopTimer();
 
-            renderExam();
+        remainingSeconds = seconds;
 
-            return;
-        }
+        updateTimerDisplay();
 
-        if (currentSection === "chemistry") {
-
-            startMathematicsPhase();
-
-            return;
-        }
-    }
-
-    if (currentPhase === "math") {
-
-        submitTest();
-    }
-}
-
-
-function markForReview() {
-
-    const section =
-        currentTest.sections[currentSection];
-
-    const index =
-        currentQuestionIndex[currentSection];
-
-    section.marked[index] =
-        !section.marked[index];
-
-    renderExam();
-}
-
-
-function clearResponse() {
-
-    const section =
-        currentTest.sections[currentSection];
-
-    const index =
-        currentQuestionIndex[currentSection];
-
-    section.answers[index] = null;
-
-    renderExam();
-}
-
-
-/* =========================================================
-   SUBJECT SWITCHING
-========================= */
-
-function switchExamSection(section) {
-
-    if (
-        currentPhase === "pc" &&
-        (section === "physics" ||
-            section === "chemistry")
-    ) {
-
-        currentSection = section;
-
-        renderExam();
-
-        return;
-    }
-
-    if (
-        currentPhase === "math" &&
-        section === "mathematics"
-    ) {
-
-        currentSection = "mathematics";
-
-        renderExam();
-
-        return;
-    }
-}
-
-
-/* =========================================================
-   TIMER
-========================= */
-
-function startTimer() {
-
-    stopTimer();
-
-    updateTimerDisplay();
-
-    timerInterval =
-        setInterval(function () {
+        examTimer = setInterval(() => {
 
             remainingSeconds--;
 
@@ -1071,584 +811,1269 @@ function startTimer() {
 
                 stopTimer();
 
-                if (currentPhase === "pc") {
-
-                    startMathematicsPhase();
-
-                } else {
-
-                    submitTest(true);
-                }
+                handleTimerEnd();
             }
 
         }, 1000);
-}
-
-
-function stopTimer() {
-
-    if (timerInterval) {
-
-        clearInterval(timerInterval);
-
-        timerInterval = null;
-    }
-}
-
-
-function updateTimerDisplay() {
-
-    const timer =
-        document.getElementById("timer");
-
-    if (timer) {
-        timer.textContent =
-            formatTime(
-                Math.max(0, remainingSeconds)
-            );
-    }
-}
-
-
-/* =========================================================
-   MATHEMATICS PHASE
-========================= */
-
-function startMathematicsPhase() {
-
-    currentPhase = "math";
-
-    currentSection = "mathematics";
-
-    currentQuestionIndex.mathematics = 0;
-
-    remainingSeconds = 90 * 60;
-
-    alert(
-        "Physics + Chemistry phase is complete.\n\nMathematics phase starts now.\n\nYou have 90 minutes."
-    );
-
-    renderExam();
-
-    startTimer();
-}
-
-
-/* =========================================================
-   SUBMIT TEST
-========================= */
-
-function submitTest(autoSubmit = false) {
-
-    if (!currentTest) {
-        return;
     }
 
-    if (!autoSubmit) {
 
-        const confirmed =
-            confirm(
-                "Are you sure you want to submit the test?"
-            );
+    function stopTimer() {
 
-        if (!confirmed) {
-            return;
+        if (examTimer) {
+
+            clearInterval(examTimer);
+
+            examTimer = null;
         }
     }
 
-    stopTimer();
 
-    showResult();
+    function updateTimerDisplay() {
 
-    recordStudyActivity();
-}
+        const timer =
+            document.getElementById(
+                "examTimer"
+            );
+
+        if (!timer) return;
+
+        const minutes =
+            Math.floor(
+                remainingSeconds / 60
+            );
+
+        const seconds =
+            remainingSeconds % 60;
+
+        timer.textContent =
+            `${String(minutes).padStart(2, "0")}:` +
+            `${String(seconds).padStart(2, "0")}`;
+    }
 
 
-/* =========================================================
-   RESULTS
-========================= */
+    function handleTimerEnd() {
 
-function calculateResults() {
+        if (examPhase === "pc") {
 
-    let totalCorrect = 0;
-    let totalWrong = 0;
-    let totalUnanswered = 0;
+            alert(
+                "Physics and Chemistry time is over. Mathematics phase will now begin."
+            );
 
-    let score = 0;
+            startMathematicsPhase();
 
-    const subjectResults = {};
+        } else {
 
-    Object.keys(currentTest.sections).forEach(sectionKey => {
+            alert(
+                "Time is over. Your test will be submitted."
+            );
 
-        const section =
-            currentTest.sections[sectionKey];
+            finishMockTest();
+        }
+    }
 
-        let correct = 0;
-        let wrong = 0;
-        let unanswered = 0;
 
-        section.questions.forEach((question, index) => {
+    function startMathematicsPhase() {
 
-            const answer =
-                section.answers[index];
+        examPhase = "math";
 
-            if (answer === null) {
+        examSubject = "Mathematics";
 
-                unanswered++;
+        examIndex = 0;
 
-            } else if (
-                answer === question.answer
+        startTimer(90 * 60);
+
+        renderExam();
+    }
+
+
+    /* =====================================================
+       EXAM RENDER
+    ===================================================== */
+
+    function renderExam() {
+
+        const title =
+            document.getElementById(
+                "examTitle"
+            );
+
+        const phase =
+            document.getElementById(
+                "examPhase"
+            );
+
+        if (title) {
+
+            title.textContent =
+                currentMock
+                    ? currentMock.title
+                    : "MHT-CET Mock Test";
+        }
+
+        if (phase) {
+
+            phase.textContent =
+                examPhase === "pc"
+                    ? "Phase 1 • Physics + Chemistry • 90 Minutes"
+                    : "Phase 2 • Mathematics • 90 Minutes";
+        }
+
+        updateSubjectTabs();
+
+        renderExamQuestion();
+
+        renderExamPalette();
+
+        updateTimerDisplay();
+    }
+
+
+    function updateSubjectTabs() {
+
+        const physics =
+            document.getElementById(
+                "examPhysicsTab"
+            );
+
+        const chemistry =
+            document.getElementById(
+                "examChemistryTab"
+            );
+
+        const mathematics =
+            document.getElementById(
+                "examMathematicsTab"
+            );
+
+        if (!physics) return;
+
+        physics.classList.toggle(
+            "active",
+            examSubject === "Physics"
+        );
+
+        chemistry.classList.toggle(
+            "active",
+            examSubject === "Chemistry"
+        );
+
+        mathematics.classList.toggle(
+            "active",
+            examSubject === "Mathematics"
+        );
+
+        mathematics.disabled =
+            examPhase !== "math";
+
+        physics.disabled =
+            false;
+
+        chemistry.disabled =
+            false;
+    }
+
+
+    function switchExamSubject(subject) {
+
+        if (
+            examPhase === "pc" &&
+            subject === "Mathematics"
+        ) {
+            return;
+        }
+
+        if (
+            examPhase === "math" &&
+            subject !== "Mathematics"
+        ) {
+            return;
+        }
+
+        examSubject = subject;
+
+        examIndex = 0;
+
+        renderExam();
+    }
+
+
+    function renderExamQuestion() {
+
+        const data =
+            examData[examSubject];
+
+        if (!data) return;
+
+        const question =
+            data.questions[examIndex];
+
+        if (!question) return;
+
+        const number =
+            document.getElementById(
+                "examQuestionNumber"
+            );
+
+        const marks =
+            document.getElementById(
+                "examQuestionMarks"
+            );
+
+        const questionElement =
+            document.getElementById(
+                "examQuestion"
+            );
+
+        const options =
+            document.getElementById(
+                "examOptions"
+            );
+
+        number.textContent =
+            `Question ${examIndex + 1} of ${data.questions.length}`;
+
+        marks.textContent =
+            examSubject === "Mathematics"
+                ? "2 Marks"
+                : "1 Mark";
+
+        questionElement.textContent =
+            question.question;
+
+        options.innerHTML = "";
+
+        question.options.forEach(
+            (option, index) => {
+
+                const button =
+                    document.createElement("button");
+
+                button.className = "option";
+
+                if (
+                    data.answers[examIndex] === index
+                ) {
+                    button.classList.add("selected");
+                }
+
+                button.innerHTML = `
+                    <strong>
+                        ${String.fromCharCode(65 + index)}.
+                    </strong>
+                    ${escapeHTML(option)}
+                `;
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        selectExamAnswer(
+                            index
+                        );
+                    }
+                );
+
+                options.appendChild(button);
+            }
+        );
+    }
+
+
+    function selectExamAnswer(index) {
+
+        const data =
+            examData[examSubject];
+
+        data.answers[examIndex] =
+            index;
+
+        renderExamQuestion();
+
+        renderExamPalette();
+    }
+
+
+    /* =====================================================
+       EXAM NAVIGATION
+    ===================================================== */
+
+    function nextExamQuestion() {
+
+        const data =
+            examData[examSubject];
+
+        if (
+            examIndex <
+            data.questions.length - 1
+        ) {
+
+            examIndex++;
+
+            renderExam();
+
+        } else {
+
+            if (
+                examPhase === "pc"
             ) {
 
-                correct++;
+                if (
+                    examSubject === "Physics"
+                ) {
 
-                if (sectionKey === "mathematics") {
-                    score += 2;
+                    examSubject =
+                        "Chemistry";
+
+                    examIndex = 0;
+
+                    renderExam();
+
                 } else {
-                    score += 1;
+
+                    const goMath =
+                        confirm(
+                            "Physics and Chemistry are complete. Start the Mathematics phase?"
+                        );
+
+                    if (goMath) {
+                        startMathematicsPhase();
+                    }
                 }
 
             } else {
 
-                wrong++;
+                alert(
+                    "You have reached the last Mathematics question."
+                );
             }
-        });
-
-        totalCorrect += correct;
-        totalWrong += wrong;
-        totalUnanswered += unanswered;
-
-        subjectResults[
-            section.subject
-        ] = {
-            correct,
-            wrong,
-            unanswered,
-            answered: correct + wrong
-        };
-    });
-
-    const totalQuestions = 150;
-
-    const answered =
-        totalCorrect + totalWrong;
-
-    const accuracy =
-        answered > 0
-            ? Math.round(
-                (totalCorrect / answered) * 100
-            )
-            : 0;
-
-    return {
-        score,
-        totalCorrect,
-        totalWrong,
-        totalUnanswered,
-        totalQuestions,
-        answered,
-        accuracy,
-        subjectResults
-    };
-}
-
-
-function showResult() {
-
-    const result =
-        calculateResults();
-
-    updateStats(
-        result.totalCorrect,
-        result.totalWrong,
-        result.answered,
-        result.subjectResults
-    );
-
-    updateTestCount();
-
-    const stats = getStats();
-
-    stats.mockTests.push({
-
-        id: currentTest.id,
-
-        title: currentTest.title,
-
-        score: result.score,
-
-        correct: result.totalCorrect,
-
-        wrong: result.totalWrong,
-
-        unanswered: result.totalUnanswered,
-
-        accuracy: result.accuracy,
-
-        date: new Date().toISOString()
-    });
-
-    saveStats(stats);
-
-    document.getElementById("resultTestName").textContent =
-        currentTest.title;
-
-    document.getElementById("score").textContent =
-        result.score + " / 200";
-
-    document.getElementById("correct").textContent =
-        result.totalCorrect;
-
-    document.getElementById("wrong").textContent =
-        result.totalWrong;
-
-    document.getElementById("unanswered").textContent =
-        result.totalUnanswered;
-
-    document.getElementById("resultAccuracy").textContent =
-        result.accuracy + "%";
-
-    document.getElementById("review").style.display =
-        "none";
-
-    showPage("result");
-}
-
-
-/* =========================================================
-   ANSWER REVIEW
-========================= */
-
-function showReview() {
-
-    const container =
-        document.getElementById("reviewList");
-
-    container.innerHTML = "";
-
-    Object.keys(currentTest.sections).forEach(sectionKey => {
-
-        const section =
-            currentTest.sections[sectionKey];
-
-        const heading =
-            document.createElement("h3");
-
-        heading.textContent =
-            section.subject;
-
-        container.appendChild(heading);
-
-        section.questions.forEach((question, index) => {
-
-            const userAnswer =
-                section.answers[index];
-
-            const item =
-                document.createElement("div");
-
-            item.className =
-                "review-item";
-
-            let status = "";
-            let statusClass = "";
-
-            if (userAnswer === null) {
-
-                status = "Unanswered";
-
-                statusClass = "unanswered";
-
-            } else if (
-                userAnswer === question.answer
-            ) {
-
-                status = "Correct";
-
-                statusClass = "correct";
-
-            } else {
-
-                status = "Wrong";
-
-                statusClass = "wrong";
-            }
-
-            const userText =
-                userAnswer === null
-                    ? "Not answered"
-                    : question.options[userAnswer];
-
-            const correctText =
-                question.options[question.answer];
-
-            item.innerHTML = `
-                <div class="review-question">
-                    <strong>
-                        Q${index + 1}. ${question.question}
-                    </strong>
-
-                    <span class="${statusClass}">
-                        ${status}
-                    </span>
-                </div>
-
-                <p>
-                    Your answer:
-                    ${userText}
-                </p>
-
-                <p>
-                    Correct answer:
-                    ${correctText}
-                </p>
-
-                <p>
-                    ${question.explanation || ""}
-                </p>
-            `;
-
-            container.appendChild(item);
-        });
-    });
-
-    document.getElementById("review").style.display =
-        "block";
-
-    document.getElementById("review").scrollIntoView({
-        behavior: "smooth"
-    });
-}
-
-
-/* =========================================================
-   PYQ
-========================= */
-
-function showPYQ() {
-
-    showPage("pyq");
-}
-
-
-function openPYQYear(year) {
-
-    const pyq =
-        pyqTests.find(
-            test => Number(test.year) === Number(year)
-        );
-
-    if (
-        !pyq ||
-        !pyq.questions ||
-        pyq.questions.length === 0
-    ) {
-
-        alert(
-            `${year} PYQ questions have not been added yet.\n\nOnly verified PYQs should be added here.`
-        );
-
-        return;
+        }
     }
 
-    alert(
-        `${year} PYQ test is ready to start.`
-    );
-}
 
+    function previousExamQuestion() {
 
-/* =========================================================
-   INSTRUCTIONS
-========================= */
+        if (examIndex > 0) {
 
-function showInstructions() {
+            examIndex--;
 
-    showPage("instructions");
-}
+            renderExam();
 
-
-function startExam() {
-
-    showMockTests();
-
-    setTimeout(function () {
-
-        if (mockTests.length > 0) {
-
-            startCETMock(mockTests[0].id);
-
-        } else {
-
-            startCETMock("MOCK-01");
+            return;
         }
 
-    }, 100);
-}
+        if (
+            examPhase === "pc" &&
+            examSubject === "Chemistry"
+        ) {
+
+            examSubject = "Physics";
+
+            examIndex =
+                examData.Physics.questions.length - 1;
+
+            renderExam();
+        }
+    }
 
 
-/* =========================================================
-   PERFORMANCE
-========================= */
+    function toggleMarkForReview() {
 
-function showPerformance() {
+        const data =
+            examData[examSubject];
 
-    showPage("performance");
+        data.marked[examIndex] =
+            !data.marked[examIndex];
 
-    const stats = getStats();
-
-    document.getElementById(
-        "performanceQuestions"
-    ).textContent =
-        stats.questions;
-
-    document.getElementById(
-        "performanceCorrect"
-    ).textContent =
-        stats.correct;
-
-    document.getElementById(
-        "performanceWrong"
-    ).textContent =
-        stats.wrong;
-
-    const accuracy =
-        stats.questions > 0
-            ? Math.round(
-                (stats.correct / stats.questions) * 100
-            )
-            : 0;
-
-    document.getElementById(
-        "performanceAccuracy"
-    ).textContent =
-        accuracy + "%";
-
-    renderSubjectPerformance();
-}
+        renderExamPalette();
+    }
 
 
-function renderSubjectPerformance() {
+    function clearExamAnswer() {
 
-    const container =
-        document.getElementById(
-            "subjectPerformanceList"
+        const data =
+            examData[examSubject];
+
+        data.answers[examIndex] =
+            null;
+
+        renderExamQuestion();
+
+        renderExamPalette();
+    }
+
+
+    /* =====================================================
+       EXAM PALETTE
+    ===================================================== */
+
+    function renderExamPalette() {
+
+        const palette =
+            document.getElementById(
+                "examQuestionPalette"
+            );
+
+        if (!palette) return;
+
+        palette.innerHTML = "";
+
+        const data =
+            examData[examSubject];
+
+        data.questions.forEach(
+            (question, index) => {
+
+                const button =
+                    document.createElement("button");
+
+                button.className =
+                    "palette-question";
+
+                button.textContent =
+                    index + 1;
+
+                if (index === examIndex) {
+                    button.classList.add(
+                        "current"
+                    );
+                }
+
+                if (
+                    data.answers[index] !== null
+                ) {
+                    button.classList.add(
+                        "answered"
+                    );
+                }
+
+                if (
+                    data.marked[index]
+                ) {
+                    button.classList.add(
+                        "marked"
+                    );
+                }
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        examIndex = index;
+
+                        renderExamQuestion();
+
+                        renderExamPalette();
+                    }
+                );
+
+                palette.appendChild(button);
+            }
         );
+    }
 
-    container.innerHTML = "";
 
-    const stats = getStats();
+    /* =====================================================
+       SUBMIT TEST
+    ===================================================== */
 
-    ["Physics", "Chemistry", "Mathematics"]
-        .forEach(subject => {
+    function submitMockTest() {
 
-            const data =
-                stats.subject[subject] || {
-                    questions: 0,
-                    correct: 0
-                };
+        const unanswered =
+            countUnanswered();
 
-            const accuracy =
-                data.questions > 0
-                    ? Math.round(
-                        (data.correct /
-                            data.questions) *
-                        100
-                    )
-                    : 0;
+        const message =
+            unanswered > 0
+                ? `You still have ${unanswered} unanswered questions.\n\nAre you sure you want to submit?`
+                : "Are you sure you want to submit the test?";
 
-            const item =
+        if (!confirm(message)) {
+            return;
+        }
+
+        finishMockTest();
+    }
+
+
+    function finishMockTest() {
+
+        stopTimer();
+
+        const result =
+            calculateResult();
+
+        saveMockResult(result);
+
+        renderResult(result);
+
+        showPage("result");
+    }
+
+
+    function countUnanswered() {
+
+        let count = 0;
+
+        Object.values(examData)
+            .forEach(data => {
+
+                data.answers.forEach(answer => {
+
+                    if (answer === null) {
+                        count++;
+                    }
+                });
+            });
+
+        return count;
+    }
+
+
+    /* =====================================================
+       RESULT CALCULATION
+    ===================================================== */
+
+    function calculateResult() {
+
+        const result = {
+
+            totalScore: 0,
+
+            maxScore: 200,
+
+            correct: 0,
+
+            wrong: 0,
+
+            unanswered: 0,
+
+            subject: {
+
+                Physics: {
+                    correct: 0,
+                    wrong: 0,
+                    unanswered: 0,
+                    score: 0,
+                    max: 50
+                },
+
+                Chemistry: {
+                    correct: 0,
+                    wrong: 0,
+                    unanswered: 0,
+                    score: 0,
+                    max: 50
+                },
+
+                Mathematics: {
+                    correct: 0,
+                    wrong: 0,
+                    unanswered: 0,
+                    score: 0,
+                    max: 100
+                }
+            },
+
+            review: []
+        };
+
+
+        Object.keys(examData)
+            .forEach(subject => {
+
+                const data =
+                    examData[subject];
+
+                const marks =
+                    subject === "Mathematics"
+                        ? 2
+                        : 1;
+
+                data.questions.forEach(
+                    (question, index) => {
+
+                        const selected =
+                            data.answers[index];
+
+                        if (selected === null) {
+
+                            result.unanswered++;
+
+                            result.subject[
+                                subject
+                            ].unanswered++;
+
+                        } else if (
+                            selected === question.answer
+                        ) {
+
+                            result.correct++;
+
+                            result.totalScore += marks;
+
+                            result.subject[
+                                subject
+                            ].correct++;
+
+                            result.subject[
+                                subject
+                            ].score += marks;
+
+                        } else {
+
+                            result.wrong++;
+
+                            result.subject[
+                                subject
+                            ].wrong++;
+                        }
+
+                        result.review.push({
+
+                            subject,
+
+                            question,
+
+                            selected,
+
+                            correct:
+                                selected ===
+                                question.answer
+                        });
+                    }
+                );
+            });
+
+
+        result.accuracy =
+            result.correct +
+            result.wrong > 0
+                ? Math.round(
+                    (
+                        result.correct /
+                        (
+                            result.correct +
+                            result.wrong
+                        )
+                    ) * 100
+                )
+                : 0;
+
+
+        return result;
+    }
+
+
+    /* =====================================================
+       RESULT PAGE
+    ===================================================== */
+
+    function renderResult(result) {
+
+        document.getElementById(
+            "resultTestTitle"
+        ).textContent =
+            currentMock
+                ? currentMock.title
+                : "Mock Test";
+
+
+        document.getElementById(
+            "resultScore"
+        ).textContent =
+            `${result.totalScore} / ${result.maxScore}`;
+
+
+        document.getElementById(
+            "resultCorrect"
+        ).textContent =
+            result.correct;
+
+
+        document.getElementById(
+            "resultWrong"
+        ).textContent =
+            result.wrong;
+
+
+        document.getElementById(
+            "resultUnanswered"
+        ).textContent =
+            result.unanswered;
+
+
+        document.getElementById(
+            "resultAccuracy"
+        ).textContent =
+            `${result.accuracy}%`;
+
+
+        renderSubjectResults(result);
+
+        renderQuestionReview(result);
+    }
+
+
+    function renderSubjectResults(result) {
+
+        const container =
+            document.getElementById(
+                "resultSubjectList"
+            );
+
+        container.innerHTML = "";
+
+        Object.keys(result.subject)
+            .forEach(subject => {
+
+                const data =
+                    result.subject[subject];
+
+                const row =
+                    document.createElement("div");
+
+                row.className =
+                    "result-subject-row";
+
+                row.innerHTML = `
+
+                    <strong>
+                        ${subject}
+                    </strong>
+
+                    <span>
+                        ${data.correct}
+                        correct
+                    </span>
+
+                    <span>
+                        ${data.score}
+                        / ${data.max}
+                    </span>
+
+                `;
+
+                container.appendChild(row);
+            });
+    }
+
+
+    function renderQuestionReview(result) {
+
+        const container =
+            document.getElementById(
+                "resultReviewList"
+            );
+
+        container.innerHTML = "";
+
+        result.review.forEach(
+            (item, index) => {
+
+                const div =
+                    document.createElement("div");
+
+                div.className =
+                    "review-item";
+
+                let answerText =
+                    "Not answered";
+
+                if (
+                    item.selected !== null
+                ) {
+
+                    answerText =
+                        item.question.options[
+                            item.selected
+                        ];
+                }
+
+                const correctText =
+                    item.question.options[
+                        item.question.answer
+                    ];
+
+                div.innerHTML = `
+
+                    <h4>
+                        ${index + 1}.
+                        ${escapeHTML(
+                            item.question.question
+                        )}
+                    </h4>
+
+                    <p>
+                        <strong>Your answer:</strong>
+                        ${escapeHTML(answerText)}
+                    </p>
+
+                    <p>
+                        <strong>Correct answer:</strong>
+                        ${escapeHTML(correctText)}
+                    </p>
+
+                    <p>
+                        ${escapeHTML(
+                            item.question.explanation
+                        )}
+                    </p>
+
+                `;
+
+                container.appendChild(div);
+            }
+        );
+    }
+
+
+    /* =====================================================
+       SAVE MOCK RESULT
+    ===================================================== */
+
+    function saveMockResult(result) {
+
+        const data =
+            getPerformanceData();
+
+        data.attempted +=
+            result.correct +
+            result.wrong;
+
+        data.correct +=
+            result.correct;
+
+        data.wrong +=
+            result.wrong;
+
+
+        Object.keys(result.subject)
+            .forEach(subject => {
+
+                const current =
+                    result.subject[subject];
+
+                if (
+                    !data.subject[subject]
+                ) {
+
+                    data.subject[subject] = {
+                        attempted: 0,
+                        correct: 0
+                    };
+                }
+
+                data.subject[
+                    subject
+                ].attempted +=
+                    current.correct +
+                    current.wrong;
+
+                data.subject[
+                    subject
+                ].correct +=
+                    current.correct;
+            });
+
+
+        data.mockHistory.unshift({
+
+            id:
+                currentMock
+                    ? currentMock.id
+                    : "MOCK",
+
+            title:
+                currentMock
+                    ? currentMock.title
+                    : "Mock Test",
+
+            score:
+                result.totalScore,
+
+            max:
+                result.maxScore,
+
+            accuracy:
+                result.accuracy,
+
+            date:
+                new Date().toLocaleString()
+
+        });
+
+
+        if (data.mockHistory.length > 20) {
+
+            data.mockHistory =
+                data.mockHistory.slice(0, 20);
+        }
+
+
+        savePerformance(data);
+
+        updatePerformancePage();
+    }
+
+
+    /* =====================================================
+       PYQ
+    ===================================================== */
+
+    function showPYQ() {
+
+        renderPYQ();
+
+        showPage("pyq");
+    }
+
+
+    function renderPYQ() {
+
+        const container =
+            document.getElementById(
+                "pyqList"
+            );
+
+        if (!container) return;
+
+        container.innerHTML = "";
+
+        pyqTests.forEach(test => {
+
+            const card =
                 document.createElement("div");
 
-            item.className =
-                "subject-performance-item";
+            card.className =
+                "test-card";
 
-            item.innerHTML = `
-                <h3>${subject}</h3>
+            card.innerHTML = `
 
-                <p>
-                    Questions Attempted:
-                    <strong>${data.questions}</strong>
-                </p>
+                <div class="test-card-info">
 
-                <p>
-                    Correct:
-                    <strong>${data.correct}</strong>
-                </p>
+                    <h3>
+                        ${escapeHTML(test.title)}
+                    </h3>
 
-                <p>
-                    Accuracy:
-                    <strong>${accuracy}%</strong>
-                </p>
+                    <p>
+                        150 Questions •
+                        200 Marks •
+                        180 Minutes
+                    </p>
+
+                </div>
+
+                <button>
+                    View
+                </button>
             `;
 
-            container.appendChild(item);
+            card.querySelector("button")
+                .addEventListener(
+                    "click",
+                    () => {
+
+                        alert(
+                            `${test.title}\n\n` +
+                            `The PYQ section is reserved for verified official previous-year questions.`
+                        );
+                    }
+                );
+
+            container.appendChild(card);
         });
-}
+    }
 
 
-/* =========================================================
-   INITIALIZE
-========================= */
+    /* =====================================================
+       PERFORMANCE PAGE
+    ===================================================== */
 
-function initializePortal() {
+    function showPerformance() {
 
-    updateDashboardStats();
+        updatePerformancePage();
 
-    showPage("home");
-}
-
-
-/* =========================================================
-   MAKE FUNCTIONS AVAILABLE TO HTML
-========================= */
-
-window.showPractice = showPractice;
-window.showMockTests = showMockTests;
-window.showPYQ = showPYQ;
-window.showPerformance = showPerformance;
-window.showInstructions = showInstructions;
-
-window.goHome = goHome;
-
-window.selectSubject = selectSubject;
-window.backToSubjects = backToSubjects;
-window.selectChapter = selectChapter;
-window.backToChapters = backToChapters;
-window.startChapterPractice = startChapterPractice;
-window.backToDifficulty = backToDifficulty;
-
-window.previousPracticeQuestion =
-    previousPracticeQuestion;
-
-window.nextPracticeQuestion =
-    nextPracticeQuestion;
-
-window.startExam = startExam;
-
-window.previousQuestion =
-    previousQuestion;
-
-window.nextQuestion =
-    nextQuestion;
-
-window.markForReview =
-    markForReview;
-
-window.clearResponse =
-    clearResponse;
-
-window.submitTest =
-    submitTest;
-
-window.showReview =
-    showReview;
-
-window.openPYQYear =
-    openPYQYear;
+        showPage("performance");
+    }
 
 
-/* =========================================================
-   START
-========================= */
+    function updatePerformancePage() {
 
-initializePortal();
+        const data =
+            getPerformanceData();
+
+
+        const attempted =
+            document.getElementById(
+                "performanceAttempted"
+            );
+
+        const correct =
+            document.getElementById(
+                "performanceCorrect"
+            );
+
+        const wrong =
+            document.getElementById(
+                "performanceWrong"
+            );
+
+        const accuracy =
+            document.getElementById(
+                "performanceAccuracy"
+            );
+
+
+        if (attempted) {
+            attempted.textContent =
+                data.attempted;
+        }
+
+        if (correct) {
+            correct.textContent =
+                data.correct;
+        }
+
+        if (wrong) {
+            wrong.textContent =
+                data.wrong;
+        }
+
+
+        const total =
+            data.correct +
+            data.wrong;
+
+
+        if (accuracy) {
+
+            accuracy.textContent =
+                total > 0
+                    ? `${Math.round(
+                        data.correct /
+                        total *
+                        100
+                    )}%`
+                    : "0%";
+        }
+
+
+        renderSubjectPerformance(data);
+
+        renderMockHistory(data);
+    }
+
+
+    function renderSubjectPerformance(data) {
+
+        const container =
+            document.getElementById(
+                "subjectPerformanceList"
+            );
+
+        if (!container) return;
+
+        container.innerHTML = "";
+
+
+        Object.keys(data.subject)
+            .forEach(subject => {
+
+                const item =
+                    data.subject[subject];
+
+                const percent =
+                    item.attempted > 0
+                        ? Math.round(
+                            item.correct /
+                            item.attempted *
+                            100
+                        )
+                        : 0;
+
+
+                const row =
+                    document.createElement("div");
+
+                row.className =
+                    "performance-row";
+
+                row.innerHTML = `
+
+                    <strong>
+                        ${subject}
+                    </strong>
+
+                    <div class="progress-bar">
+
+                        <div
+                            class="progress-fill"
+                            style="width:${percent}%">
+                        </div>
+
+                    </div>
+
+                    <span>
+                        ${percent}%
+                    </span>
+
+                `;
+
+                container.appendChild(row);
+            });
+    }
+
+
+    function renderMockHistory(data) {
+
+        const container =
+            document.getElementById(
+                "mockHistory"
+            );
+
+        if (!container) return;
+
+        if (!data.mockHistory.length) {
+
+            container.innerHTML = `
+                <div class="empty-state">
+                    No mock tests completed yet.
+                </div>
+            `;
+
+            return;
+        }
+
+        container.innerHTML = "";
+
+
+        data.mockHistory.forEach(test => {
+
+            const row =
+                document.createElement("div");
+
+            row.className =
+                "performance-row";
+
+            row.innerHTML = `
+
+                <strong>
+                    ${escapeHTML(test.title)}
+                </strong>
+
+                <span>
+                    ${test.score}/${test.max}
+                </span>
+
+                <span>
+                    ${test.accuracy}%
+                </span>
+
+            `;
+
+            container.appendChild(row);
+        });
+    }
+
+
+    /* =====================================================
+       RANDOM QUESTIONS
+    ===================================================== */
+
+    function getRandomQuestions(
+        subject,
+        count
+    ) {
+
+        const pool =
+            questionBank.filter(
+                q => q.subject === subject
+            );
+
+        const shuffled =
+            [...pool].sort(
+                () => Math.random() - 0.5
+            );
+
+        return shuffled.slice(
+            0,
+            Math.min(count, shuffled.length)
+        );
+    }
+
+
+    /* =====================================================
+       SECURITY / TEXT ESCAPING
+    ===================================================== */
+
+    function escapeHTML(value) {
+
+        return String(value)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+
+    /* =====================================================
+       EXPOSE FUNCTIONS TO HTML
+    ===================================================== */
+
+    window.showPage =
+        showPage;
+
+    window.showPractice =
+        showPractice;
+
+    window.showMockTests =
+        showMockTests;
+
+    window.showPYQ =
+        showPYQ;
+
+    window.showPerformance =
+        showPerformance;
+
+    window.selectSubject =
+        selectSubject;
+
+    window.filterPracticeDifficulty =
+        filterPracticeDifficulty;
+
+    window.previousPracticeQuestion =
+        previousPracticeQuestion;
+
+    window.nextPracticeQuestion =
+        nextPracticeQuestion;
+
+    window.goBackToChapters =
+        goBackToChapters;
+
+    window.switchExamSubject =
+        switchExamSubject;
+
+    window.previousExamQuestion =
+        previousExamQuestion;
+
+    window.nextExamQuestion =
+        nextExamQuestion;
+
+    window.toggleMarkForReview =
+        toggleMarkForReview;
+
+    window.clearExamAnswer =
+        clearExamAnswer;
+
+    window.submitMockTest =
+        submitMockTest;
+
+
+    /* =====================================================
+       START APPLICATION
+    ===================================================== */
+
+    initializePortal();
+
+})();
