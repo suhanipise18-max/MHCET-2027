@@ -507,6 +507,7 @@ function getAccuracy() {
     );
 }
 
+
 function updateDashboard() {
     const progress = getPracticeProgress();
 
@@ -519,6 +520,28 @@ function updateDashboard() {
     document.getElementById("accuracy").textContent =
         getAccuracy() + "%";
 
+    const lastPracticeDate =
+        localStorage.getItem("lastPracticeDate");
+
+    let streak = 0;
+
+    if (lastPracticeDate) {
+        const lastDate = new Date(lastPracticeDate);
+        const today = new Date();
+
+        const difference =
+            Math.floor(
+                (today.setHours(0, 0, 0, 0) -
+                lastDate.setHours(0, 0, 0, 0))
+                / (1000 * 60 * 60 * 24)
+            );
+
+        if (difference === 0) {
+            streak = 1;
+        }
+    }
+
     document.getElementById("studyStreak").textContent =
-        "0 Days";
+        streak + " Days";
 }
+
