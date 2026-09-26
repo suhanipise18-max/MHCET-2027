@@ -469,32 +469,71 @@ document.addEventListener("DOMContentLoaded", function() {
 // ========================================
 
 function savePracticeProgress(isCorrect) {
-    let progress = JSON.parse(localStorage.getItem("mhcetProgress")) || {
-        attempted: 0,
-        correct: 0,
-        wrong: 0
-    };
+
+    let progress =
+        JSON.parse(localStorage.getItem("mhcetProgress")) || {
+            attempted: 0,
+            correct: 0,
+            wrong: 0
+        };
 
     progress.attempted++;
-localStorage.setItem("lastPracticeDate", new Date().toDateString());
- 
+
     if (isCorrect) {
         progress.correct++;
     } else {
         progress.wrong++;
     }
 
-    localStorage.setItem("mhcetProgress", JSON.stringify(progress));
-}
+    // ===============================
+    // STUDY STREAK
+    // ===============================
 
-function getPracticeProgress() {
-    return JSON.parse(localStorage.getItem("mhcetProgress")) || {
-        attempted: 0,
-        correct: 0,
-        wrong: 0
-    };
-}
+    const today = new Date().toDateString();
+    const lastDate =
+        localStorage.getItem("lastPracticeDate");
 
+    let streak =
+        Number(localStorage.getItem("studyStreak")) || 0;
+
+    if (lastDate === today) {
+
+        // Already practiced today
+        // Keep same streak
+
+    } else if (lastDate) {
+
+        const oldDate = new Date(lastDate);
+        const currentDate = new Date();
+
+        oldDate.setHours(0, 0, 0, 0);
+        currentDate.setHours(0, 0, 0, 0);
+
+        const difference =
+            Math.floor(
+                (currentDate - oldDate) /
+                (1000 * 60 * 60 * 24)
+            );
+
+        if (difference === 1) {
+            streak++;
+        } else {
+            streak = 1;
+        }
+
+    } else {
+
+        streak = 1;
+    }
+
+    localStorage.setItem("lastPracticeDate", today);
+    localStorage.setItem("studyStreak", streak);
+
+    localStorage.setItem(
+        "mhcetProgress",
+        JSON.stringify(progress)
+    );
+}
 function getAccuracy() {
     const progress = getPracticeProgress();
 
@@ -509,6 +548,7 @@ function getAccuracy() {
 
 
 function updateDashboard() {
+
     const progress = getPracticeProgress();
 
     document.getElementById("questionsAttempted").textContent =
@@ -520,25 +560,55 @@ function updateDashboard() {
     document.getElementById("accuracy").textContent =
         getAccuracy() + "%";
 
+
+    // ===============================
+    // STUDY STREAK
+    // ===============================
+
+    let streak =
+        Number(localStorage.getItem("studyStreak")) || 0;
+
     const lastPracticeDate =
         localStorage.getItem("lastPracticeDate");
 
-    let streak = 0;
+    if (!lastPracticeDate) {
 
-    if (lastPracticeDate) {
-        const lastDate = new Date(lastPracticeDate);
-        const today = new Date();
+        streak = 0;
+
+    } else {
+
+        const lastDate =
+            new Date(lastPracticeDate);
+
+        const today =
+            new Date();
+
+        lastDate.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
 
         const difference =
             Math.floor(
-                (today.setHours(0, 0, 0, 0) -
-                lastDate.setHours(0, 0, 0, 0))
-                / (1000 * 60 * 60 * 24)
+                (today - lastDate) /
+                (1000 * 60 * 60 * 24)
             );
 
         if (difference === 0) {
-            streak = 1;
+
+            // Practiced today
+            // Keep current streak
+
+        } else if (difference === 1) {
+
+            // Practiced yesterday
+            // Keep current streak
+
+        } else {
+
+            // Missed a day
+            streak = 0;
+
         }
+
     }
 
     document.getElementById("studyStreak").textContent =
