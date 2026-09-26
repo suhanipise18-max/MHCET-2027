@@ -504,20 +504,13 @@ function getAccuracy() {
     );
 }
 
+
 function updateDashboard() {
     const progress = getPracticeProgress();
 
-    document.getElementById("questionsAttempted").textContent =
+    document.querySelector("#home .dashboard-grid .stat-card:nth-child(1) p").textContent =
         progress.attempted;
 
-    document.getElementById("testsCompleted").textContent =
-        0;
-
-    document.getElementById("accuracy").textContent =
+    document.querySelector("#home .dashboard-grid .stat-card:nth-child(3) p").textContent =
         getAccuracy() + "%";
-
-    document.getElementById("studyStreak").textContent =
-        "0 Days";
-}
-
 }
