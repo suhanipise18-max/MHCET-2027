@@ -1,788 +1,1470 @@
-// ======================================================
-// MHT-CET 2027 PRACTICE PORTAL - COMPLETE APP.JS
-// ======================================================
+// =====================================================
+// MHT-CET 2027 PRACTICE PORTAL
+// Complete app.js
+// Works with the provided index.html + questions.js
+// =====================================================
 
 
-// ======================================================
-// PAGE NAVIGATION
-// ======================================================
-
-function hideAllSections() {
-    document.getElementById("home").style.display = "none";
-    document.getElementById("practice").style.display = "none";
-    document.getElementById("instructions").style.display = "none";
-    document.getElementById("exam").style.display = "none";
-    document.getElementById("result").style.display = "none";
-}
-
-
-// ======================================================
-// DASHBOARD
-// ======================================================
-
-function goHome() {
-    hideAllSections();
-
-    document.getElementById("home").style.display = "block";
-
-    updateDashboard();
-}
-
-
-// ======================================================
-// PRACTICE VARIABLES
-// ======================================================
+// =====================================================
+// GLOBAL VARIABLES
+// =====================================================
 
 let selectedSubject = "";
 let selectedChapter = "";
+
 let practiceQuestions = [];
-let currentPracticeQuestion = 0;
-let selectedPracticeAnswer = null;
+let currentPracticeIndex = 0;
+let practiceAnswered = [];
+
+let examQuestions = [];
+let examAnswers = [];
+let currentQuestionIndex = 0;
+
+let timerInterval = null;
+let timeLeft = 20 * 60;
+
+let examSubmitted = false;
 
 
-// ======================================================
-// OPEN PRACTICE
-// ======================================================
+// =====================================================
+// STATISTICS
+// =====================================================
+
+let stats = JSON.parse(
+  localStorage.getItem("mhtcetStats")
+) || {
+  attempted: 0,
+  correct: 0,
+  wrong: 0,
+  testsCompleted: 0,
+  studyStreak: 0,
+  lastStudyDate: null
+};
+
+
+// =====================================================
+// START APP
+// =====================================================
+
+document.addEventListener("DOMContentLoaded", function () {
+
+  updateDashboard();
+
+});
+
+
+// =====================================================
+// SAVE STATISTICS
+// =====================================================
+
+function saveStats() {
+
+  localStorage.setItem(
+    "mhtcetStats",
+    JSON.stringify(stats)
+  );
+
+}
+
+
+// =====================================================
+// UPDATE DASHBOARD
+// =====================================================
+
+function updateDashboard() {
+
+  const attempted =
+    document.getElementById("questionsAttempted");
+
+  const tests =
+    document.getElementById("testsCompleted");
+
+  const accuracy =
+    document.getElementById("accuracy");
+
+  const streak =
+    document.getElementById("studyStreak");
+
+
+  if (attempted) {
+    attempted.innerText = stats.attempted;
+  }
+
+  if (tests) {
+    tests.innerText = stats.testsCompleted;
+  }
+
+
+  let accuracyValue = 0;
+
+  if (stats.attempted > 0) {
+
+    accuracyValue =
+      Math.round(
+        (stats.correct / stats.attempted) * 100
+      );
+
+  }
+
+
+  if (accuracy) {
+    accuracy.innerText =
+      accuracyValue + "%";
+  }
+
+
+  if (streak) {
+    streak.innerText =
+      stats.studyStreak + " Days";
+  }
+
+}
+
+
+// =====================================================
+// STUDY STREAK
+// =====================================================
+
+function updateStudyStreak() {
+
+  const today =
+    new Date().toISOString().split("T")[0];
+
+
+  if (stats.lastStudyDate === today) {
+    return;
+  }
+
+
+  if (stats.lastStudyDate) {
+
+    const lastDate =
+      new Date(stats.lastStudyDate);
+
+    const todayDate =
+      new Date(today);
+
+    const difference =
+      Math.floor(
+        (todayDate - lastDate) /
+        (1000 * 60 * 60 * 24)
+      );
+
+
+    if (difference === 1) {
+
+      stats.studyStreak++;
+
+    } else if (difference > 1) {
+
+      stats.studyStreak = 1;
+
+    }
+
+  } else {
+
+    stats.studyStreak = 1;
+
+  }
+
+
+  stats.lastStudyDate = today;
+
+  saveStats();
+
+}
+
+
+// =====================================================
+// SHOW SECTION
+// =====================================================
+
+function showSection(sectionId) {
+
+  const sections = [
+    "home",
+    "practice",
+    "instructions",
+    "exam",
+    "result"
+  ];
+
+
+  sections.forEach(function (id) {
+
+    const section =
+      document.getElementById(id);
+
+    if (section) {
+
+      section.style.display =
+        id === sectionId
+          ? "block"
+          : "none";
+
+    }
+
+  });
+
+}
+
+
+// =====================================================
+// GO HOME / DASHBOARD
+// =====================================================
+
+function goHome() {
+
+  clearInterval(timerInterval);
+
+  showSection("home");
+
+  updateDashboard();
+
+}
+
+
+// =====================================================
+// PRACTICE HOME
+// =====================================================
 
 function showPractice() {
 
-    hideAllSections();
+  clearInterval(timerInterval);
 
-    document.getElementById("practice").style.display = "block";
+  showSection("practice");
 
-    document.getElementById("practiceSubjects").style.display = "block";
-    document.getElementById("chapterSection").style.display = "none";
-    document.getElementById("practiceQuestion").style.display = "none";
+
+  const practiceSubjects =
+    document.getElementById("practiceSubjects");
+
+  const chapterSection =
+    document.getElementById("chapterSection");
+
+  const practiceQuestion =
+    document.getElementById("practiceQuestion");
+
+
+  if (practiceSubjects) {
+    practiceSubjects.style.display = "block";
+  }
+
+  if (chapterSection) {
+    chapterSection.style.display = "none";
+  }
+
+  if (practiceQuestion) {
+    practiceQuestion.style.display = "none";
+  }
+
+
+  selectedSubject = "";
+  selectedChapter = "";
+
 }
 
 
-// ======================================================
+// =====================================================
 // SELECT SUBJECT
-// ======================================================
+// =====================================================
 
 function selectSubject(subject) {
 
-    selectedSubject = subject;
-
-    document.getElementById("practiceSubjects").style.display = "none";
-    document.getElementById("chapterSection").style.display = "block";
-
-    document.getElementById("selectedSubject").textContent =
-        subject + " Chapters";
-
-    createChapterList(subject);
-}
+  selectedSubject = subject;
 
 
-// ======================================================
-// CHAPTER LIST
-// ======================================================
+  const practiceSubjects =
+    document.getElementById("practiceSubjects");
 
-function createChapterList(subject) {
+  const chapterSection =
+    document.getElementById("chapterSection");
 
-    const chapterList = document.getElementById("chapterList");
+  const selectedSubjectElement =
+    document.getElementById("selectedSubject");
 
-    chapterList.innerHTML = "";
-
-    let chapters = [];
-
-
-    if (subject === "Physics") {
-
-        chapters = [
-            "Units and Measurements",
-            "Motion",
-            "Laws of Motion",
-            "Work, Energy and Power",
-            "Rotational Motion",
-            "Gravitation",
-            "Properties of Matter",
-            "Thermal Properties",
-            "Oscillations",
-            "Waves",
-            "Electrostatics",
-            "Current Electricity",
-            "Magnetic Effects of Current",
-            "Electromagnetic Induction",
-            "Ray Optics",
-            "Modern Physics"
-        ];
-
-    }
+  const chapterList =
+    document.getElementById("chapterList");
 
 
-    else if (subject === "Chemistry") {
+  if (practiceSubjects) {
+    practiceSubjects.style.display = "none";
+  }
 
-        chapters = [
-            "Some Basic Concepts of Chemistry",
-            "Structure of Atom",
-            "Periodic Table",
-            "Chemical Bonding",
-            "States of Matter",
-            "Thermodynamics",
-            "Equilibrium",
-            "Redox Reactions",
-            "Organic Chemistry Basics",
-            "Hydrocarbons",
-            "Solutions",
-            "Electrochemistry",
-            "Chemical Kinetics",
-            "Coordination Compounds"
-        ];
-
-    }
+  if (chapterSection) {
+    chapterSection.style.display = "block";
+  }
 
 
-    else if (subject === "Mathematics") {
+  if (selectedSubjectElement) {
 
-        chapters = [
-            "Trigonometry",
-            "Straight Lines",
-            "Circles",
-            "Vectors",
-            "Three Dimensional Geometry",
-            "Probability",
-            "Matrices",
-            "Determinants",
-            "Limits",
-            "Continuity",
-            "Differentiation",
-            "Integration",
-            "Differential Equations"
-        ];
+    selectedSubjectElement.innerText =
+      subject + " Chapters";
 
-    }
+  }
 
 
-    chapters.forEach(function(chapter) {
+  const subjectQuestions =
+    questions.filter(function (q) {
 
-        const button = document.createElement("button");
-
-        button.className = "chapter-button";
-
-        button.textContent = chapter;
-
-        button.onclick = function() {
-            selectChapter(chapter);
-        };
-
-        chapterList.appendChild(button);
+      return q.subject === subject;
 
     });
+
+
+  const chapters = [
+    ...new Set(
+      subjectQuestions.map(function (q) {
+        return q.chapter;
+      })
+    )
+  ];
+
+
+  chapterList.innerHTML = "";
+
+
+  if (chapters.length === 0) {
+
+    chapterList.innerHTML =
+      "<p>No chapters available.</p>";
+
+    return;
+
+  }
+
+
+  chapters.forEach(function (chapter) {
+
+    const chapterQuestions =
+      subjectQuestions.filter(function (q) {
+
+        return q.chapter === chapter;
+
+      });
+
+
+    const button =
+      document.createElement("button");
+
+
+    button.className = "btn";
+
+    button.style.margin = "6px";
+
+    button.style.display = "block";
+
+    button.style.width = "100%";
+
+    button.style.textAlign = "left";
+
+
+    button.innerHTML =
+      "📖 " +
+      chapter +
+      " — " +
+      chapterQuestions.length +
+      " Question" +
+      (chapterQuestions.length !== 1 ? "s" : "");
+
+
+    button.onclick = function () {
+
+      startChapterPractice(chapter);
+
+    };
+
+
+    chapterList.appendChild(button);
+
+  });
+
 }
 
 
-// ======================================================
-// SELECT CHAPTER
-// ======================================================
+// =====================================================
+// BACK TO SUBJECTS
+// =====================================================
 
-function selectChapter(chapter) {
+function backToSubjects() {
 
-    selectedChapter = chapter;
+  const practiceSubjects =
+    document.getElementById("practiceSubjects");
 
-    document.getElementById("chapterSection").style.display = "none";
-    document.getElementById("practiceQuestion").style.display = "block";
+  const chapterSection =
+    document.getElementById("chapterSection");
 
-    document.getElementById("practiceChapter").textContent =
-        chapter;
+  const practiceQuestion =
+    document.getElementById("practiceQuestion");
 
-    loadPracticeQuestions();
+
+  practiceSubjects.style.display = "block";
+
+  chapterSection.style.display = "none";
+
+  practiceQuestion.style.display = "none";
+
+
+  selectedSubject = "";
+
+  selectedChapter = "";
+
 }
 
 
-// ======================================================
-// LOAD PRACTICE QUESTIONS
-// ======================================================
+// =====================================================
+// START CHAPTER PRACTICE
+// =====================================================
 
-function loadPracticeQuestions() {
+function startChapterPractice(chapter) {
 
-    currentPracticeQuestion = 0;
-    selectedPracticeAnswer = null;
-
-    practiceQuestions = [];
+  selectedChapter = chapter;
 
 
-    // questions.js must contain a variable called "questions"
-    if (typeof questions !== "undefined" && Array.isArray(questions)) {
+  practiceQuestions =
+    questions.filter(function (q) {
 
-        practiceQuestions = questions.filter(function(q) {
-
-            return q.subject === selectedSubject &&
-                (
-                    !q.chapter ||
-                    q.chapter === selectedChapter
-                );
-
-        });
-
-    }
-
-
-    // If no questions are available
-    if (practiceQuestions.length === 0) {
-
-        practiceQuestions = [
-
-            {
-                subject: selectedSubject,
-                chapter: selectedChapter,
-
-                question:
-                    "Practice questions for this chapter will be added soon.",
-
-                options: [
-                    "Option A",
-                    "Option B",
-                    "Option C",
-                    "Option D"
-                ],
-
-                answer: 0,
-
-                explanation:
-                    "Real MHT-CET practice questions will be added to this chapter."
-            }
-
-        ];
-
-    }
-
-
-    showPracticeQuestion();
-}
-
-
-// ======================================================
-// SHOW PRACTICE QUESTION
-// ======================================================
-
-function showPracticeQuestion() {
-
-    const q =
-        practiceQuestions[currentPracticeQuestion];
-
-
-    document.getElementById("practiceQuestionNumber").textContent =
-        "Question " +
-        (currentPracticeQuestion + 1) +
-        " / " +
-        practiceQuestions.length;
-
-
-    document.getElementById("practiceChapter").textContent =
-        selectedChapter;
-
-
-    document.getElementById("practiceQuestionText").textContent =
-        q.question;
-
-
-    const optionsContainer =
-        document.getElementById("practiceOptions");
-
-
-    optionsContainer.innerHTML = "";
-
-
-    selectedPracticeAnswer = null;
-
-
-    q.options.forEach(function(option, index) {
-
-        const button =
-            document.createElement("button");
-
-
-        button.className =
-            "practice-option";
-
-
-        button.textContent =
-            String.fromCharCode(65 + index) +
-            ". " +
-            option;
-
-
-        button.onclick = function() {
-
-            checkPracticeAnswer(index);
-
-        };
-
-
-        optionsContainer.appendChild(button);
+      return (
+        q.subject === selectedSubject &&
+        q.chapter === selectedChapter
+      );
 
     });
 
 
-    document.getElementById("practiceFeedback").style.display =
-        "none";
+  if (practiceQuestions.length === 0) {
+
+    alert("No questions found for this chapter.");
+
+    return;
+
+  }
+
+
+  currentPracticeIndex = 0;
+
+  practiceAnswered =
+    new Array(practiceQuestions.length).fill(null);
+
+
+  document.getElementById(
+    "practiceSubjects"
+  ).style.display = "none";
+
+
+  document.getElementById(
+    "chapterSection"
+  ).style.display = "none";
+
+
+  document.getElementById(
+    "practiceQuestion"
+  ).style.display = "block";
+
+
+  updateStudyStreak();
+
+  renderPracticeQuestion();
+
 }
 
 
-// ======================================================
-// CHECK PRACTICE ANSWER
-// ======================================================
+// =====================================================
+// RENDER PRACTICE QUESTION
+// =====================================================
 
-function checkPracticeAnswer(index) {
+function renderPracticeQuestion() {
 
-    const q =
-        practiceQuestions[currentPracticeQuestion];
-
-
-    const feedback =
-        document.getElementById("practiceFeedback");
+  const q =
+    practiceQuestions[currentPracticeIndex];
 
 
-    if (selectedPracticeAnswer !== null) {
-        return;
-    }
+  document.getElementById(
+    "practiceQuestionNumber"
+  ).innerText =
+    "Question " +
+    (currentPracticeIndex + 1) +
+    " / " +
+    practiceQuestions.length;
 
 
-    selectedPracticeAnswer = index;
+  document.getElementById(
+    "practiceChapter"
+  ).innerText =
+    q.chapter;
+
+
+  document.getElementById(
+    "practiceQuestionText"
+  ).innerText =
+    q.question;
+
+
+  const optionsContainer =
+    document.getElementById("practiceOptions");
+
+
+  optionsContainer.innerHTML = "";
+
+
+  q.options.forEach(function (option, index) {
+
+    const button =
+      document.createElement("button");
+
+
+    button.className = "btn";
+
+    button.style.display = "block";
+
+    button.style.width = "100%";
+
+    button.style.textAlign = "left";
+
+    button.style.marginBottom = "10px";
+
+
+    button.innerText =
+      String.fromCharCode(65 + index) +
+      ". " +
+      option;
+
+
+    button.onclick = function () {
+
+      answerPracticeQuestion(index);
+
+    };
+
+
+    optionsContainer.appendChild(button);
+
+  });
+
+
+  const feedback =
+    document.getElementById("practiceFeedback");
+
+
+  feedback.style.display = "none";
+
+  feedback.innerHTML = "";
+
+
+  // If already answered, show the previous answer
+  if (practiceAnswered[currentPracticeIndex] !== null) {
+
+    showPracticeAnswer(
+      practiceAnswered[currentPracticeIndex]
+    );
+
+  }
+
+}
+
+
+// =====================================================
+// ANSWER PRACTICE QUESTION
+// =====================================================
+
+function answerPracticeQuestion(selectedAnswer) {
+
+  // Prevent answering same question twice
+  if (
+    practiceAnswered[currentPracticeIndex] !== null
+  ) {
+    return;
+  }
+
+
+  practiceAnswered[currentPracticeIndex] =
+    selectedAnswer;
+
+
+  const q =
+    practiceQuestions[currentPracticeIndex];
+
+
+  const isCorrect =
+    selectedAnswer === q.answer;
+
+
+  // Update statistics
+  stats.attempted++;
+
+
+  if (isCorrect) {
+
+    stats.correct++;
+
+  } else {
+
+    stats.wrong++;
+
+  }
+
+
+  updateStudyStreak();
+
+  saveStats();
+
+  updateDashboard();
+
+
+  showPracticeAnswer(selectedAnswer);
+
+}
+
+
+// =====================================================
+// SHOW PRACTICE ANSWER
+// =====================================================
+
+function showPracticeAnswer(selectedAnswer) {
+
+  const q =
+    practiceQuestions[currentPracticeIndex];
+
+
+  const feedback =
+    document.getElementById("practiceFeedback");
+
+
+  const buttons =
+    document.querySelectorAll(
+      "#practiceOptions button"
+    );
+
+
+  buttons.forEach(function (button, index) {
+
+    button.disabled = true;
 
 
     if (index === q.answer) {
 
-        savePracticeProgress(true);
-
-        feedback.style.display = "block";
-
-        feedback.innerHTML =
-            "✅ <strong>Correct!</strong><br><br>" +
-            (q.explanation || "Good job!");
-
-    }
-
-    else {
-
-        savePracticeProgress(false);
-
-        feedback.style.display = "block";
-
-        feedback.innerHTML =
-            "❌ <strong>Incorrect.</strong><br><br>" +
-            "Correct answer: " +
-            q.options[q.answer] +
-            "<br><br>" +
-            (q.explanation || "");
+      button.style.border =
+        "2px solid green";
 
     }
 
 
-    updateDashboard();
+    if (
+      index === selectedAnswer &&
+      selectedAnswer !== q.answer
+    ) {
+
+      button.style.border =
+        "2px solid red";
+
+    }
+
+  });
+
+
+  if (selectedAnswer === q.answer) {
+
+    feedback.style.display = "block";
+
+    feedback.style.background =
+      "#dff6e4";
+
+    feedback.style.color =
+      "#176b2c";
+
+
+    feedback.innerHTML =
+
+      "<strong>✅ Correct!</strong>" +
+      "<p>" +
+      q.explanation +
+      "</p>";
+
+  } else {
+
+    feedback.style.display = "block";
+
+    feedback.style.background =
+      "#ffe2e2";
+
+    feedback.style.color =
+      "#a00000";
+
+
+    feedback.innerHTML =
+
+      "<strong>❌ Wrong!</strong>" +
+
+      "<p><strong>Correct Answer:</strong> " +
+      q.options[q.answer] +
+      "</p>" +
+
+      "<p>" +
+      q.explanation +
+      "</p>";
+
+  }
+
 }
 
 
-// ======================================================
-// NEXT QUESTION
-// ======================================================
+// =====================================================
+// NEXT PRACTICE QUESTION
+// =====================================================
 
 function nextPracticeQuestion() {
 
-    if (
-        currentPracticeQuestion <
-        practiceQuestions.length - 1
-    ) {
+  if (
+    currentPracticeIndex <
+    practiceQuestions.length - 1
+  ) {
 
-        currentPracticeQuestion++;
+    currentPracticeIndex++;
 
-        showPracticeQuestion();
+    renderPracticeQuestion();
 
-    }
+  } else {
 
-    else {
+    alert(
+      "🎉 You completed this chapter!"
+    );
 
-        alert("🎉 You have completed this chapter!");
+  }
 
-        goHome();
-
-    }
 }
 
 
-// ======================================================
-// PREVIOUS QUESTION
-// ======================================================
+// =====================================================
+// PREVIOUS PRACTICE QUESTION
+// =====================================================
 
 function previousPracticeQuestion() {
 
-    if (currentPracticeQuestion > 0) {
+  if (currentPracticeIndex > 0) {
 
-        currentPracticeQuestion--;
+    currentPracticeIndex--;
 
-        showPracticeQuestion();
+    renderPracticeQuestion();
 
-    }
+  }
+
 }
 
 
-// ======================================================
-// BACK TO SUBJECTS
-// ======================================================
-
-function backToSubjects() {
-
-    document.getElementById("chapterSection").style.display =
-        "none";
-
-    document.getElementById("practiceQuestion").style.display =
-        "none";
-
-    document.getElementById("practiceSubjects").style.display =
-        "block";
-}
-
-
-// ======================================================
+// =====================================================
 // BACK TO CHAPTERS
-// ======================================================
+// =====================================================
 
 function backToChapters() {
 
-    document.getElementById("practiceQuestion").style.display =
-        "none";
+  document.getElementById(
+    "practiceSubjects"
+  ).style.display = "none";
 
-    document.getElementById("chapterSection").style.display =
-        "block";
+
+  document.getElementById(
+    "chapterSection"
+  ).style.display = "block";
+
+
+  document.getElementById(
+    "practiceQuestion"
+  ).style.display = "none";
+
+
+  selectSubject(selectedSubject);
+
 }
 
 
-// ======================================================
+// =====================================================
 // MOCK TEST INSTRUCTIONS
-// ======================================================
+// =====================================================
 
 function showInstructions() {
 
-    hideAllSections();
+  clearInterval(timerInterval);
 
-    document.getElementById("instructions").style.display =
-        "block";
+  showSection("instructions");
+
 }
 
 
-// ======================================================
+// =====================================================
 // START MOCK TEST
-// ======================================================
+// =====================================================
 
 function startExam() {
 
-    hideAllSections();
-
-    document.getElementById("exam").style.display =
-        "block";
+  clearInterval(timerInterval);
 
 
-    if (typeof createNumberButtons === "function") {
-        createNumberButtons();
-    }
+  // Randomly select 10 questions
+  examQuestions =
+    [...questions]
+      .sort(function () {
+        return Math.random() - 0.5;
+      })
+      .slice(0, 10);
 
 
-    if (typeof showQuestion === "function") {
-        showQuestion();
-    }
+  examAnswers =
+    new Array(examQuestions.length).fill(null);
 
 
-    if (typeof startTimer === "function") {
-        startTimer();
-    }
+  currentQuestionIndex = 0;
+
+  examSubmitted = false;
+
+  timeLeft = 20 * 60;
+
+
+  updateStudyStreak();
+
+
+  showSection("exam");
+
+
+  renderExamQuestion();
+
+  renderQuestionNumbers();
+
+  startTimer();
 
 }
 
 
-// ======================================================
-// PRACTICE PROGRESS
-// ======================================================
+// =====================================================
+// RENDER EXAM QUESTION
+// =====================================================
 
-function savePracticeProgress(isCorrect) {
+function renderExamQuestion() {
 
-    let progress =
-        getPracticeProgress();
-
-
-    progress.attempted++;
+  const q =
+    examQuestions[currentQuestionIndex];
 
 
-    if (isCorrect) {
+  document.getElementById(
+    "questionNumber"
+  ).innerText =
 
-        progress.correct++;
-
-    }
-
-    else {
-
-        progress.wrong++;
-
-    }
+    "Question " +
+    (currentQuestionIndex + 1) +
+    " / " +
+    examQuestions.length;
 
 
-    updateStudyStreak();
+  document.getElementById(
+    "subjectName"
+  ).innerText =
+    q.subject;
 
 
-    localStorage.setItem(
-        "mhcetProgress",
-        JSON.stringify(progress)
-    );
-}
+  document.getElementById(
+    "questionText"
+  ).innerText =
+    q.question;
 
 
-// ======================================================
-// GET PRACTICE PROGRESS
-// ======================================================
-
-function getPracticeProgress() {
-
-    const saved =
-        localStorage.getItem("mhcetProgress");
+  const optionsContainer =
+    document.getElementById("options");
 
 
-    if (saved) {
-
-        try {
-
-            return JSON.parse(saved);
-
-        }
-
-        catch (error) {
-
-            console.log(
-                "Progress data reset."
-            );
-
-        }
-
-    }
+  optionsContainer.innerHTML = "";
 
 
-    return {
+  q.options.forEach(function (option, index) {
 
-        attempted: 0,
-        correct: 0,
-        wrong: 0
-
-    };
-}
+    const button =
+      document.createElement("button");
 
 
-// ======================================================
-// ACCURACY
-// ======================================================
+    button.className = "btn";
 
-function getAccuracy() {
+    button.style.display = "block";
 
-    const progress =
-        getPracticeProgress();
+    button.style.width = "100%";
 
+    button.style.textAlign = "left";
 
-    if (progress.attempted === 0) {
-        return 0;
-    }
+    button.style.marginBottom = "10px";
 
 
-    return Math.round(
-        (
-            progress.correct /
-            progress.attempted
-        ) * 100
-    );
-}
+    button.innerText =
+      String.fromCharCode(65 + index) +
+      ". " +
+      option;
 
 
-// ======================================================
-// STUDY STREAK
-// ======================================================
-
-function updateStudyStreak() {
-
-    const today =
-        new Date();
-
-
-    today.setHours(0, 0, 0, 0);
-
-
-    const todayString =
-        today.toDateString();
-
-
-    const lastDateString =
-        localStorage.getItem(
-            "lastPracticeDate"
-        );
-
-
-    let streak =
-        Number(
-            localStorage.getItem(
-                "studyStreak"
-            )
-        ) || 0;
-
-
-    // First practice ever
-    if (!lastDateString) {
-
-        streak = 1;
-
-    }
-
-
-    else if (
-        lastDateString === todayString
+    if (
+      examAnswers[currentQuestionIndex] ===
+      index
     ) {
 
-        // Already practiced today
-        // Do not increase streak
+      button.style.border =
+        "2px solid #333";
+
+      button.style.fontWeight =
+        "bold";
 
     }
 
 
-    else {
+    button.onclick = function () {
 
-        const lastDate =
-            new Date(lastDateString);
+      selectExamAnswer(index);
 
-
-        lastDate.setHours(0, 0, 0, 0);
+    };
 
 
-        const difference =
-            Math.floor(
-                (
-                    today -
-                    lastDate
-                ) /
-                (1000 * 60 * 60 * 24)
-            );
+    optionsContainer.appendChild(button);
+
+  });
 
 
-        if (difference === 1) {
+  renderQuestionNumbers();
 
-            // Practiced yesterday
-            streak++;
-
-        }
-
-        else {
-
-            // Missed one or more days
-            streak = 1;
-
-        }
-
-    }
-
-
-    localStorage.setItem(
-        "studyStreak",
-        streak
-    );
-
-
-    localStorage.setItem(
-        "lastPracticeDate",
-        todayString
-    );
 }
 
 
-// ======================================================
-// DASHBOARD UPDATE
-// ======================================================
+// =====================================================
+// SELECT EXAM ANSWER
+// =====================================================
 
-function updateDashboard() {
+function selectExamAnswer(index) {
 
-    const progress =
-        getPracticeProgress();
-
-
-    // Questions Attempted
-    const questionsAttempted =
-        document.getElementById(
-            "questionsAttempted"
-        );
+  if (examSubmitted) {
+    return;
+  }
 
 
-    if (questionsAttempted) {
-
-        questionsAttempted.textContent =
-            progress.attempted;
-
-    }
+  examAnswers[currentQuestionIndex] =
+    index;
 
 
-    // Tests Completed
-    const testsCompleted =
-        document.getElementById(
-            "testsCompleted"
-        );
+  renderExamQuestion();
 
-
-    if (testsCompleted) {
-
-        testsCompleted.textContent =
-            Number(
-                localStorage.getItem(
-                    "testsCompleted"
-                )
-            ) || 0;
-
-    }
-
-
-    // Accuracy
-    const accuracy =
-        document.getElementById(
-            "accuracy"
-        );
-
-
-    if (accuracy) {
-
-        accuracy.textContent =
-            getAccuracy() + "%";
-
-    }
-
-
-    // Study Streak
-    const studyStreak =
-        document.getElementById(
-            "studyStreak"
-        );
-
-
-    if (studyStreak) {
-
-        studyStreak.textContent =
-            (
-                Number(
-                    localStorage.getItem(
-                        "studyStreak"
-                    )
-                ) || 0
-            ) +
-            " Days";
-
-    }
 }
 
 
-// ======================================================
-// PAGE LOAD
-// ======================================================
+// =====================================================
+// QUESTION NUMBERS
+// =====================================================
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function() {
+function renderQuestionNumbers() {
 
-        // Make sure old progress is valid
-        getPracticeProgress();
+  const container =
+    document.getElementById(
+      "questionNumbers"
+    );
 
-        updateDashboard();
 
-        goHome();
+  if (!container) {
+    return;
+  }
+
+
+  container.innerHTML = "";
+
+
+  examQuestions.forEach(function (q, index) {
+
+    const button =
+      document.createElement("button");
+
+
+    button.innerText =
+      index + 1;
+
+
+    button.style.padding =
+      "8px 12px";
+
+    button.style.cursor =
+      "pointer";
+
+    button.style.borderRadius =
+      "6px";
+
+
+    if (
+      examAnswers[index] !== null
+    ) {
+
+      button.style.background =
+        "#b8f5c4";
 
     }
-);
+
+
+    if (
+      index === currentQuestionIndex
+    ) {
+
+      button.style.fontWeight =
+        "bold";
+
+      button.style.border =
+        "2px solid #333";
+
+    }
+
+
+    button.onclick = function () {
+
+      goToQuestion(index);
+
+    };
+
+
+    container.appendChild(button);
+
+  });
+
+}
+
+
+// =====================================================
+// GO TO QUESTION
+// =====================================================
+
+function goToQuestion(index) {
+
+  if (
+    index < 0 ||
+    index >= examQuestions.length
+  ) {
+    return;
+  }
+
+
+  currentQuestionIndex = index;
+
+  renderExamQuestion();
+
+}
+
+
+// =====================================================
+// NEXT QUESTION
+// =====================================================
+
+function nextQuestion() {
+
+  if (
+    currentQuestionIndex <
+    examQuestions.length - 1
+  ) {
+
+    currentQuestionIndex++;
+
+    renderExamQuestion();
+
+  }
+
+}
+
+
+// =====================================================
+// PREVIOUS QUESTION
+// =====================================================
+
+function previousQuestion() {
+
+  if (currentQuestionIndex > 0) {
+
+    currentQuestionIndex--;
+
+    renderExamQuestion();
+
+  }
+
+}
+
+
+// =====================================================
+// TIMER
+// =====================================================
+
+function startTimer() {
+
+  updateTimer();
+
+
+  timerInterval =
+    setInterval(function () {
+
+      timeLeft--;
+
+      updateTimer();
+
+
+      if (timeLeft <= 0) {
+
+        clearInterval(timerInterval);
+
+        alert(
+          "⏰ Time is up! Your test will be submitted."
+        );
+
+        submitTest(true);
+
+      }
+
+    }, 1000);
+
+}
+
+
+// =====================================================
+// UPDATE TIMER DISPLAY
+// =====================================================
+
+function updateTimer() {
+
+  const timer =
+    document.getElementById("timer");
+
+
+  if (!timer) {
+    return;
+  }
+
+
+  const minutes =
+    Math.floor(timeLeft / 60);
+
+
+  const seconds =
+    timeLeft % 60;
+
+
+  timer.innerText =
+
+    String(minutes).padStart(2, "0") +
+    ":" +
+    String(seconds).padStart(2, "0");
+
+
+  if (timeLeft <= 60) {
+
+    timer.style.color =
+      "red";
+
+  }
+
+}
+
+
+// =====================================================
+// SUBMIT TEST
+// =====================================================
+
+function submitTest(autoSubmit = false) {
+
+  if (examSubmitted) {
+    return;
+  }
+
+
+  const unanswered =
+    examAnswers.filter(function (answer) {
+
+      return answer === null;
+
+    }).length;
+
+
+  if (!autoSubmit && unanswered > 0) {
+
+    const confirmSubmit =
+      confirm(
+
+        "You have " +
+        unanswered +
+        " unanswered question(s).\n\n" +
+        "Are you sure you want to submit?"
+
+      );
+
+
+    if (!confirmSubmit) {
+      return;
+    }
+
+  }
+
+
+  examSubmitted = true;
+
+
+  clearInterval(timerInterval);
+
+
+  let correct = 0;
+
+  let wrong = 0;
+
+  let unansweredCount = 0;
+
+
+  examQuestions.forEach(
+    function (q, index) {
+
+      const answer =
+        examAnswers[index];
+
+
+      if (answer === null) {
+
+        unansweredCount++;
+
+      } else if (
+        answer === q.answer
+      ) {
+
+        correct++;
+
+      } else {
+
+        wrong++;
+
+      }
+
+    }
+  );
+
+
+  // Update statistics
+  stats.attempted +=
+    correct + wrong;
+
+
+  stats.correct +=
+    correct;
+
+
+  stats.wrong +=
+    wrong;
+
+
+  stats.testsCompleted++;
+
+
+  saveStats();
+
+  updateDashboard();
+
+
+  showResult(
+    correct,
+    wrong,
+    unansweredCount
+  );
+
+}
+
+
+// =====================================================
+// SHOW RESULT
+// =====================================================
+
+function showResult(
+  correct,
+  wrong,
+  unanswered
+) {
+
+  const total =
+    examQuestions.length;
+
+
+  document.getElementById(
+    "score"
+  ).innerText =
+
+    correct +
+    " / " +
+    total;
+
+
+  document.getElementById(
+    "correct"
+  ).innerText =
+    correct;
+
+
+  document.getElementById(
+    "wrong"
+  ).innerText =
+    wrong;
+
+
+  document.getElementById(
+    "unanswered"
+  ).innerText =
+    unanswered;
+
+
+  createAnswerReview();
+
+
+  showSection("result");
+
+}
+
+
+// =====================================================
+// ANSWER REVIEW
+// =====================================================
+
+function createAnswerReview() {
+
+  const review =
+    document.getElementById("review");
+
+
+  review.innerHTML = "";
+
+
+  examQuestions.forEach(
+    function (q, index) {
+
+      const userAnswer =
+        examAnswers[index];
+
+
+      const card =
+        document.createElement("div");
+
+
+      card.style.padding =
+        "15px";
+
+      card.style.marginBottom =
+        "15px";
+
+      card.style.border =
+        "1px solid #ddd";
+
+      card.style.borderRadius =
+        "10px";
+
+
+      let statusHTML = "";
+
+
+      if (userAnswer === null) {
+
+        statusHTML =
+          "<p>⭕ <strong>Unanswered</strong></p>";
+
+      } else if (
+        userAnswer === q.answer
+      ) {
+
+        statusHTML =
+          "<p>✅ <strong>Correct</strong></p>";
+
+      } else {
+
+        statusHTML =
+          "<p>❌ <strong>Wrong</strong></p>";
+
+      }
+
+
+      let userAnswerText =
+        "Not answered";
+
+
+      if (userAnswer !== null) {
+
+        userAnswerText =
+          q.options[userAnswer];
+
+      }
+
+
+      card.innerHTML =
+
+        "<h3>Question " +
+        (index + 1) +
+        "</h3>" +
+
+        "<p><strong>" +
+        q.question +
+        "</strong></p>" +
+
+        statusHTML +
+
+        "<p><strong>Your Answer:</strong> " +
+        userAnswerText +
+        "</p>" +
+
+        "<p><strong>Correct Answer:</strong> " +
+        q.options[q.answer] +
+        "</p>" +
+
+        "<p><strong>Explanation:</strong> " +
+        q.explanation +
+        "</p>";
+
+
+      review.appendChild(card);
+
+    }
+  );
+
+}
+
+
+// =====================================================
+// RESET / START ANOTHER TEST
+// =====================================================
+
+function restartTest() {
+
+  startExam();
+
+}
+
+
+// =====================================================
+// MAKE FUNCTIONS AVAILABLE TO HTML
+// =====================================================
+
+window.showPractice =
+  showPractice;
+
+window.selectSubject =
+  selectSubject;
+
+window.backToSubjects =
+  backToSubjects;
+
+window.backToChapters =
+  backToChapters;
+
+window.previousPracticeQuestion =
+  previousPracticeQuestion;
+
+window.nextPracticeQuestion =
+  nextPracticeQuestion;
+
+window.showInstructions =
+  showInstructions;
+
+window.startExam =
+  startExam;
+
+window.previousQuestion =
+  previousQuestion;
+
+window.nextQuestion =
+  nextQuestion;
+
+window.submitTest =
+  submitTest;
+
+window.goHome =
+  goHome;
