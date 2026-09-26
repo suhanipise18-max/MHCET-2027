@@ -1,1859 +1,1600 @@
-/* =========================================================
-   MHT-CET 2027 PRACTICE PORTAL
-   FINAL APP.JS
-========================================================= */
+// ============================================================
+// MHT-CET 2027 PRACTICE PORTAL
+// CET-STYLE MOCK TEST ENGINE
+// ============================================================
 
-
-/* =========================================================
-   GLOBAL VARIABLES
-========================================================= */
-
-let currentSubject = "";
+let currentSubject = "Physics";
 let currentChapter = "";
-let currentDifficulty = "";
+let currentDifficulty = "Easy";
 
-let practiceQuestions = [];
-let currentPracticeIndex = 0;
-
-let examQuestions = [];
+let currentTest = null;
 let currentQuestionIndex = 0;
-
-let userAnswers = [];
-let markedForReview = [];
-
-let timerInterval = null;
-let timeRemaining = 0;
-
-let currentTestName = "MHT-CET Mock Test";
-
-let lastResult = null;
+let userAnswers = {};
+let markedQuestions = {};
+let testTimer = null;
+let remainingSeconds = 0;
+let testSubmitted = false;
 
 
-/* =========================================================
-   PAGE HELPERS
-========================================================= */
+// ============================================================
+// BASIC HELPERS
+// ============================================================
 
-function getElement(id) {
-    return document.getElementById(id);
+function getApp(id) {
+  return document.getElementById(id);
+}
+
+function shuffleArray(array) {
+  const arr = [...array];
+
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+
+  return arr;
+}
+
+function getPracticeQuestions() {
+  return (window.questions || []).filter(q => q.type === "practice");
 }
 
 
-function hideAllPages() {
+// ============================================================
+// DASHBOARD
+// ============================================================
 
-    document.querySelectorAll(".page").forEach(function(page) {
-        page.style.display = "none";
-    });
+function showDashboard() {
+  stopTimer();
+
+  const app = getApp("app");
+
+  if (!app) return;
+
+  app.innerHTML = `
+    <div class="dashboard">
+
+      <h1>MHT-CET 2027 Practice Portal</h1>
+
+      <div class="dashboard-grid">
+
+        <button onclick="showSubject('Physics')">
+          <h2>Physics</h2>
+          <p>Practice Physics chapters</p>
+        </button>
+
+        <button onclick="showSubject('Chemistry')">
+          <h2>Chemistry</h2>
+          <p>Practice Chemistry chapters</p>
+        </button>
+
+        <button onclick="showSubject('Mathematics')">
+          <h2>Mathematics</h2>
+          <p>Practice Mathematics chapters</p>
+        </button>
+
+        <button onclick="showMockTests()">
+          <h2>Mock Tests</h2>
+          <p>50 CET-style mock tests</p>
+        </button>
+
+        <button onclick="showPYQTests()">
+          <h2>PYQ</h2>
+          <p>Previous-year practice</p>
+        </button>
+
+        <button onclick="showPerformance()">
+          <h2>Performance</h2>
+          <p>Track your progress</p>
+        </button>
+
+      </div>
+
+    </div>
+  `;
 }
 
 
-function showPage(id) {
+// ============================================================
+// SUBJECT PAGE
+// ============================================================
 
-    hideAllPages();
+function showSubject(subject) {
 
-    const page = getElement(id);
+  currentSubject = subject;
 
-    if (page) {
-        page.style.display = "block";
-    }
+  const chapters =
+    window.chapterCatalog?.[subject] || [];
 
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
+  const app = getApp("app");
+
+  if (!app) return;
+
+  app.innerHTML = `
+    <div class="page">
+
+      <button onclick="showDashboard()">← Dashboard</button>
+
+      <h1>${subject}</h1>
+
+      <div class="chapter-grid">
+
+        ${chapters.map((chapter, index) => `
+          <button
+            onclick="showChapter('${subject}', '${chapter.replace(/'/g, "\\'")}')"
+          >
+            <strong>${index + 1}. ${chapter}</strong>
+            <span>30 Questions</span>
+          </button>
+        `).join("")}
+
+      </div>
+
+    </div>
+  `;
 }
 
 
-/* =========================================================
-   LOCAL STORAGE
-========================================================= */
+// ============================================================
+// CHAPTER PAGE
+// ============================================================
 
-function getStats() {
+function showChapter(subject, chapter) {
 
-    return JSON.parse(
-        localStorage.getItem("mhtcetStats")
-    ) || {
-        questionsAttempted: 0,
-        testsCompleted: 0,
-        correct: 0,
-        wrong: 0,
-        studyStreak: 0,
-        lastStudyDate: null
-    };
+  currentSubject = subject;
+  currentChapter = chapter;
+
+  const app = getApp("app");
+
+  if (!app) return;
+
+  app.innerHTML = `
+    <div class="page">
+
+      <button onclick="showSubject('${subject}')">
+        ← Back
+      </button>
+
+      <h1>${chapter}</h1>
+
+      <p>Select difficulty</p>
+
+      <div class="difficulty-grid">
+
+        <button onclick="startPractice('Easy')">
+          Easy
+          <span>10 Questions</span>
+        </button>
+
+        <button onclick="startPractice('Medium')">
+          Medium
+          <span>10 Questions</span>
+        </button>
+
+        <button onclick="startPractice('Hard')">
+          Hard
+          <span>10 Questions</span>
+        </button>
+
+      </div>
+
+    </div>
+  `;
 }
 
 
-function saveStats(stats) {
+// ============================================================
+// PRACTICE MODE
+// ============================================================
 
-    localStorage.setItem(
-        "mhtcetStats",
-        JSON.stringify(stats)
-    );
+function startPractice(difficulty) {
+
+  currentDifficulty = difficulty;
+
+  const bank = getPracticeQuestions().filter(q =>
+    q.subject === currentSubject &&
+    q.chapter === currentChapter &&
+    q.difficulty === difficulty
+  );
+
+  if (!bank.length) {
+    alert("No questions available for this section.");
+    return;
+  }
+
+  currentTest = {
+    mode: "practice",
+    title: `${currentChapter} - ${difficulty}`,
+    questions: shuffleArray(bank)
+  };
+
+  currentQuestionIndex = 0;
+  userAnswers = {};
+  markedQuestions = {};
+  testSubmitted = false;
+
+  renderPracticeQuestion();
 }
 
 
-/* =========================================================
-   INITIALIZATION
-========================================================= */
+// ============================================================
+// PRACTICE QUESTION
+// ============================================================
 
-document.addEventListener("DOMContentLoaded", function() {
+function renderPracticeQuestion() {
 
-    updateDashboard();
+  const q =
+    currentTest.questions[currentQuestionIndex];
 
-    generateMockTests();
+  const app = getApp("app");
 
-});
+  if (!app || !q) return;
 
+  app.innerHTML = `
+    <div class="exam-page">
 
-/* =========================================================
-   HOME
-========================================================= */
+      <div class="exam-header">
 
-function goHome() {
+        <div>
+          <strong>${currentTest.title}</strong>
+          <p>
+            Question ${currentQuestionIndex + 1}
+            of ${currentTest.questions.length}
+          </p>
+        </div>
 
-    stopTimer();
+        <button onclick="showDashboard()">
+          Exit
+        </button>
 
-    showPage("home");
+      </div>
 
-    updateDashboard();
+      <div class="exam-body">
+
+        <main class="question-box">
+
+          <h2>${q.question}</h2>
+
+          <div class="options">
+
+            ${q.options.map((option, index) => `
+              <label class="option">
+                <input
+                  type="radio"
+                  name="answer"
+                  value="${index}"
+                  ${userAnswers[q.id] === index ? "checked" : ""}
+                  onchange="savePracticeAnswer(${index})"
+                >
+                <span>${option}</span>
+              </label>
+            `).join("")}
+
+          </div>
+
+          <div class="question-actions">
+
+            <button onclick="previousPracticeQuestion()">
+              Previous
+            </button>
+
+            <button onclick="clearPracticeAnswer()">
+              Clear Response
+            </button>
+
+            <button onclick="nextPracticeQuestion()">
+              ${currentQuestionIndex === currentTest.questions.length - 1
+                ? "Finish"
+                : "Next"}
+            </button>
+
+          </div>
+
+        </main>
+
+        <aside class="question-palette">
+
+          <h3>Questions</h3>
+
+          ${currentTest.questions.map((item, index) => `
+            <button
+              class="${getPaletteClass(item.id, index)}"
+              onclick="goToPracticeQuestion(${index})"
+            >
+              ${index + 1}
+            </button>
+          `).join("")}
+
+        </aside>
+
+      </div>
+
+    </div>
+  `;
 }
 
 
-/* =========================================================
-   DASHBOARD
-========================================================= */
+function savePracticeAnswer(answer) {
 
-function updateDashboard() {
+  const q =
+    currentTest.questions[currentQuestionIndex];
 
-    const stats = getStats();
-
-    const questionsElement =
-        getElement("questionsAttempted");
-
-    const testsElement =
-        getElement("testsCompleted");
-
-    const accuracyElement =
-        getElement("accuracy");
-
-    const streakElement =
-        getElement("studyStreak");
-
-
-    if (questionsElement) {
-        questionsElement.textContent =
-            stats.questionsAttempted;
-    }
-
-
-    if (testsElement) {
-        testsElement.textContent =
-            stats.testsCompleted;
-    }
-
-
-    let accuracy = 0;
-
-    if (stats.questionsAttempted > 0) {
-
-        accuracy = Math.round(
-            (stats.correct /
-                stats.questionsAttempted) * 100
-        );
-    }
-
-
-    if (accuracyElement) {
-        accuracyElement.textContent =
-            accuracy + "%";
-    }
-
-
-    if (streakElement) {
-        streakElement.textContent =
-            stats.studyStreak;
-    }
+  userAnswers[q.id] = Number(answer);
 }
 
-
-/* =========================================================
-   STUDY STREAK
-========================================================= */
-
-function updateStudyStreak() {
-
-    const stats = getStats();
-
-    const today =
-        new Date().toISOString().split("T")[0];
-
-
-    if (stats.lastStudyDate === today) {
-        return;
-    }
-
-
-    if (!stats.lastStudyDate) {
-
-        stats.studyStreak = 1;
-
-    } else {
-
-        const last =
-            new Date(stats.lastStudyDate);
-
-        const current =
-            new Date(today);
-
-        const difference =
-            Math.floor(
-                (current - last) /
-                (1000 * 60 * 60 * 24)
-            );
-
-
-        if (difference === 1) {
-            stats.studyStreak++;
-        } else {
-            stats.studyStreak = 1;
-        }
-    }
-
-
-    stats.lastStudyDate = today;
-
-    saveStats(stats);
-}
-
-
-/* =========================================================
-   HOME NAVIGATION
-========================================================= */
-
-function showPractice() {
-
-    showPage("practice");
-
-    const subject =
-        getElement("subjectSelection");
-
-    const chapter =
-        getElement("chapterSection");
-
-    const difficulty =
-        getElement("difficultySection");
-
-    const question =
-        getElement("practiceQuestion");
-
-
-    if (subject) subject.style.display = "block";
-    if (chapter) chapter.style.display = "none";
-    if (difficulty) difficulty.style.display = "none";
-    if (question) question.style.display = "none";
-}
-
-
-function showMockTests() {
-
-    showPage("mockTests");
-
-    generateMockTests();
-}
-
-
-function showPYQ() {
-
-    showPage("pyq");
-
-    generatePYQList();
-}
-
-
-function showPerformance() {
-
-    showPage("performance");
-
-    updatePerformance();
-}
-
-
-function showInstructions() {
-
-    showPage("instructions");
-}
-
-
-/* =========================================================
-   SUBJECT SELECTION
-========================================================= */
-
-function selectSubject(subject) {
-
-    currentSubject = subject;
-
-    const selectedSubject =
-        getElement("selectedSubject");
-
-    if (selectedSubject) {
-        selectedSubject.textContent = subject;
-    }
-
-
-    const subjectSelection =
-        getElement("subjectSelection");
-
-    const chapterSection =
-        getElement("chapterSection");
-
-    const difficultySection =
-        getElement("difficultySection");
-
-    const practiceQuestion =
-        getElement("practiceQuestion");
-
-
-    if (subjectSelection)
-        subjectSelection.style.display = "none";
-
-    if (chapterSection)
-        chapterSection.style.display = "block";
-
-    if (difficultySection)
-        difficultySection.style.display = "none";
-
-    if (practiceQuestion)
-        practiceQuestion.style.display = "none";
-
-
-    generateChapterList(subject);
-}
-
-
-/* =========================================================
-   CHAPTER LIST
-========================================================= */
-
-function generateChapterList(subject) {
-
-    const chapterList =
-        getElement("chapterList");
-
-
-    if (!chapterList) {
-        return;
-    }
-
-
-    chapterList.innerHTML = "";
-
-
-    if (
-        typeof questions === "undefined" ||
-        !Array.isArray(questions)
-    ) {
-
-        chapterList.innerHTML =
-            "<p>Question bank not loaded.</p>";
-
-        return;
-    }
-
-
-    const chapters = [];
-
-
-    questions.forEach(function(q) {
-
-        if (
-            q.subject === subject &&
-            !chapters.includes(q.chapter)
-        ) {
-            chapters.push(q.chapter);
-        }
-
-    });
-
-
-    if (chapters.length === 0) {
-
-        chapterList.innerHTML =
-            "<p>No chapters available.</p>";
-
-        return;
-    }
-
-
-    chapters.forEach(function(chapter) {
-
-        const card =
-            document.createElement("div");
-
-        card.className =
-            "chapter-card";
-
-
-        const count =
-            questions.filter(function(q) {
-
-                return (
-                    q.subject === subject &&
-                    q.chapter === chapter
-                );
-
-            }).length;
-
-
-        card.innerHTML = `
-            <h3>${chapter}</h3>
-            <p>${count} questions available</p>
-        `;
-
-
-        card.onclick = function() {
-            selectChapter(chapter);
-        };
-
-
-        chapterList.appendChild(card);
-
-    });
-}
-
-
-/* =========================================================
-   BACK TO SUBJECTS
-========================================================= */
-
-function backToSubjects() {
-
-    const subjectSelection =
-        getElement("subjectSelection");
-
-    const chapterSection =
-        getElement("chapterSection");
-
-    const difficultySection =
-        getElement("difficultySection");
-
-    const practiceQuestion =
-        getElement("practiceQuestion");
-
-
-    if (subjectSelection)
-        subjectSelection.style.display = "block";
-
-    if (chapterSection)
-        chapterSection.style.display = "none";
-
-    if (difficultySection)
-        difficultySection.style.display = "none";
-
-    if (practiceQuestion)
-        practiceQuestion.style.display = "none";
-}
-
-
-/* =========================================================
-   CHAPTER SELECTION
-========================================================= */
-
-function selectChapter(chapter) {
-
-    currentChapter = chapter;
-
-    const selectedChapter =
-        getElement("selectedChapter");
-
-    if (selectedChapter) {
-        selectedChapter.textContent = chapter;
-    }
-
-
-    const chapterSection =
-        getElement("chapterSection");
-
-    const difficultySection =
-        getElement("difficultySection");
-
-
-    if (chapterSection)
-        chapterSection.style.display = "none";
-
-    if (difficultySection)
-        difficultySection.style.display = "block";
-}
-
-
-function backToChapters() {
-
-    const difficultySection =
-        getElement("difficultySection");
-
-    const chapterSection =
-        getElement("chapterSection");
-
-
-    if (difficultySection)
-        difficultySection.style.display = "none";
-
-    if (chapterSection)
-        chapterSection.style.display = "block";
-}
-
-
-/* =========================================================
-   START CHAPTER PRACTICE
-========================================================= */
-
-function startChapterPractice(difficulty) {
-
-    currentDifficulty = difficulty;
-
-
-    if (
-        typeof questions === "undefined" ||
-        !Array.isArray(questions)
-    ) {
-
-        alert("Question bank not loaded.");
-
-        return;
-    }
-
-
-    practiceQuestions =
-        questions.filter(function(q) {
-
-            return (
-                q.type === "practice" &&
-                q.subject === currentSubject &&
-                q.chapter === currentChapter &&
-                q.difficulty === difficulty
-            );
-
-        });
-
-
-    if (practiceQuestions.length === 0) {
-
-        alert(
-            "No " +
-            difficulty +
-            " questions are available for this chapter."
-        );
-
-        return;
-    }
-
-
-    currentPracticeIndex = 0;
-
-
-    const difficultySection =
-        getElement("difficultySection");
-
-    const practiceQuestion =
-        getElement("practiceQuestion");
-
-
-    if (difficultySection)
-        difficultySection.style.display = "none";
-
-    if (practiceQuestion)
-        practiceQuestion.style.display = "block";
-
-
-    showPracticeQuestion();
-}
-
-
-/* =========================================================
-   SHOW PRACTICE QUESTION
-========================================================= */
-
-function showPracticeQuestion() {
-
-    const q =
-        practiceQuestions[currentPracticeIndex];
-
-
-    if (!q) {
-        return;
-    }
-
-
-    const number =
-        getElement("practiceQuestionNumber");
-
-    const chapter =
-        getElement("practiceChapter");
-
-    const difficulty =
-        getElement("practiceDifficulty");
-
-    const questionText =
-        getElement("practiceQuestionText");
-
-
-    if (number) {
-
-        number.textContent =
-            "Question " +
-            (currentPracticeIndex + 1) +
-            " of " +
-            practiceQuestions.length;
-    }
-
-
-    if (chapter) {
-        chapter.textContent = q.chapter;
-    }
-
-
-    if (difficulty) {
-        difficulty.textContent = q.difficulty;
-    }
-
-
-    if (questionText) {
-        questionText.textContent = q.question;
-    }
-
-
-    const optionsContainer =
-        getElement("practiceOptions");
-
-
-    if (!optionsContainer) {
-        return;
-    }
-
-
-    optionsContainer.innerHTML = "";
-
-
-    q.options.forEach(function(option, index) {
-
-        const button =
-            document.createElement("button");
-
-
-        button.className = "option";
-
-
-        button.textContent =
-            String.fromCharCode(65 + index) +
-            ". " +
-            option;
-
-
-        button.onclick = function() {
-
-            answerPracticeQuestion(index);
-
-        };
-
-
-        optionsContainer.appendChild(button);
-
-    });
-
-
-    const feedback =
-        getElement("practiceFeedback");
-
-
-    if (feedback) {
-        feedback.innerHTML = "";
-    }
-}
-
-
-/* =========================================================
-   PRACTICE ANSWER
-========================================================= */
-
-function answerPracticeQuestion(selectedIndex) {
-
-    const q =
-        practiceQuestions[currentPracticeIndex];
-
-
-    if (!q) {
-        return;
-    }
-
-
-    const options =
-        document.querySelectorAll(
-            "#practiceOptions .option"
-        );
-
-
-    options.forEach(function(option) {
-        option.disabled = true;
-    });
-
-
-    const feedback =
-        getElement("practiceFeedback");
-
-
-    if (selectedIndex === q.answer) {
-
-        if (options[selectedIndex]) {
-            options[selectedIndex]
-                .classList.add("correct");
-        }
-
-
-        if (feedback) {
-
-            feedback.innerHTML = `
-                <strong>Correct! ✓</strong>
-                <br><br>
-                ${q.explanation || ""}
-            `;
-
-            feedback.style.background = "#ecfdf3";
-            feedback.style.color = "#166534";
-        }
-
-    } else {
-
-        if (options[selectedIndex]) {
-            options[selectedIndex]
-                .classList.add("wrong");
-        }
-
-
-        if (options[q.answer]) {
-            options[q.answer]
-                .classList.add("correct");
-        }
-
-
-        if (feedback) {
-
-            feedback.innerHTML = `
-                <strong>Incorrect ✗</strong>
-                <br><br>
-                Correct answer:
-                ${q.options[q.answer]}
-                <br><br>
-                ${q.explanation || ""}
-            `;
-
-            feedback.style.background = "#fef2f2";
-            feedback.style.color = "#991b1b";
-        }
-    }
-
-
-    updateStudyStreak();
-
-
-    const stats = getStats();
-
-    stats.questionsAttempted++;
-
-
-    if (selectedIndex === q.answer) {
-        stats.correct++;
-    } else {
-        stats.wrong++;
-    }
-
-
-    saveStats(stats);
-
-    updateDashboard();
-}
-
-
-/* =========================================================
-   PRACTICE NAVIGATION
-========================================================= */
 
 function previousPracticeQuestion() {
 
-    if (currentPracticeIndex > 0) {
-
-        currentPracticeIndex--;
-
-        showPracticeQuestion();
-    }
+  if (currentQuestionIndex > 0) {
+    currentQuestionIndex--;
+    renderPracticeQuestion();
+  }
 }
 
 
 function nextPracticeQuestion() {
 
-    if (
-        currentPracticeIndex <
-        practiceQuestions.length - 1
-    ) {
+  if (
+    currentQuestionIndex <
+    currentTest.questions.length - 1
+  ) {
 
-        currentPracticeIndex++;
+    currentQuestionIndex++;
+    renderPracticeQuestion();
 
-        showPracticeQuestion();
+  } else {
 
-    } else {
+    showPracticeResult();
 
-        alert(
-            "You have reached the end of this practice set."
-        );
-    }
+  }
 }
 
 
-function backToDifficulty() {
+function clearPracticeAnswer() {
 
-    const practiceQuestion =
-        getElement("practiceQuestion");
+  const q =
+    currentTest.questions[currentQuestionIndex];
 
-    const difficultySection =
-        getElement("difficultySection");
+  delete userAnswers[q.id];
 
-
-    if (practiceQuestion)
-        practiceQuestion.style.display = "none";
-
-    if (difficultySection)
-        difficultySection.style.display = "block";
+  renderPracticeQuestion();
 }
 
 
-/* =========================================================
-   MOCK TEST LIST
-========================================================= */
+function goToPracticeQuestion(index) {
 
-function generateMockTests() {
+  currentQuestionIndex = index;
 
-    const container =
-        getElement("mockTestList");
-
-
-    if (!container) {
-        return;
-    }
-
-
-    container.innerHTML = "";
-
-
-    for (let i = 1; i <= 50; i++) {
-
-        const card =
-            document.createElement("div");
-
-        card.className = "test-card";
-
-
-        card.innerHTML = `
-            <h3>Mock Test ${String(i).padStart(2, "0")}</h3>
-
-            <p>
-                Full MHT-CET-style practice test
-                with timer and question navigation.
-            </p>
-
-            <button onclick="startMockTest(${i})">
-                Start Test
-            </button>
-        `;
-
-
-        container.appendChild(card);
-    }
+  renderPracticeQuestion();
 }
 
 
-/* =========================================================
-   START MOCK TEST
-========================================================= */
+// ============================================================
+// MOCK TEST LIST
+// ============================================================
 
-function startMockTest(testNumber) {
+function showMockTests() {
 
-    if (
-        typeof questions === "undefined" ||
-        !questions.length
-    ) {
+  const app = getApp("app");
 
-        alert("Question bank is empty.");
+  if (!app) return;
 
-        return;
-    }
+  const tests = window.mockTests || [];
+
+  app.innerHTML = `
+    <div class="page">
+
+      <button onclick="showDashboard()">
+        ← Dashboard
+      </button>
+
+      <h1>MHT-CET Mock Tests</h1>
+
+      <p>
+        Physics + Chemistry: 60 minutes
+        <br>
+        Mathematics: 120 minutes
+      </p>
+
+      <div class="mock-grid">
+
+        ${tests.map(test => `
+          <button onclick="startCETMock('${test.id}')">
+            <strong>${test.title}</strong>
+
+            <span>
+              Physics + Chemistry: 1 Hour
+            </span>
+
+            <span>
+              Mathematics: 2 Hours
+            </span>
+          </button>
+        `).join("")}
+
+      </div>
+
+    </div>
+  `;
+}
 
 
-    currentTestName =
-        "MHT-CET Mock Test " +
-        String(testNumber).padStart(2, "0");
+// ============================================================
+// CREATE CET MOCK
+// ============================================================
+
+function startCETMock(testId) {
+
+  const bank = getPracticeQuestions();
+
+  const physics = shuffleArray(
+    bank.filter(q => q.subject === "Physics")
+  );
+
+  const chemistry = shuffleArray(
+    bank.filter(q => q.subject === "Chemistry")
+  );
+
+  const mathematics = shuffleArray(
+    bank.filter(q => q.subject === "Mathematics")
+  );
 
 
-    /*
-      Current master bank contains 1680 practice slots.
-      Until verified full mock questions are added,
-      this creates a 150-question timed practice test.
-    */
+  // ----------------------------------------------------------
+  // MIX DIFFICULTIES
+  // ----------------------------------------------------------
 
-    examQuestions =
-        shuffleArray(
-            questions.filter(function(q) {
-                return q.type === "practice";
-            }).slice()
-        ).slice(0, 150);
+  function mixedQuestions(list, count) {
 
-
-    startExamWithQuestions(
-        examQuestions,
-        currentTestName
+    const easy = shuffleArray(
+      list.filter(q => q.difficulty === "Easy")
     );
-}
 
+    const medium = shuffleArray(
+      list.filter(q => q.difficulty === "Medium")
+    );
 
-/* =========================================================
-   START EXAM
-========================================================= */
+    const hard = shuffleArray(
+      list.filter(q => q.difficulty === "Hard")
+    );
 
-function startExam() {
+    const result = [];
 
-    startMockTest(1);
-}
-
-
-function startExamWithQuestions(
-    questionSet,
-    testName
-) {
-
-    examQuestions =
-        questionSet || [];
-
-
-    currentTestName =
-        testName || "MHT-CET Mock Test";
-
-
-    if (!examQuestions.length) {
-
-        alert("No questions available.");
-
-        return;
-    }
-
-
-    currentQuestionIndex = 0;
-
-
-    userAnswers =
-        new Array(
-            examQuestions.length
-        ).fill(null);
-
-
-    markedForReview =
-        new Array(
-            examQuestions.length
-        ).fill(false);
-
-
-    /*
-      180-minute practice timer.
-    */
-
-    timeRemaining = 180 * 60;
-
-
-    showPage("exam");
-
-
-    const examTitle =
-        getElement("examTitle");
-
-
-    if (examTitle) {
-        examTitle.textContent =
-            currentTestName;
-    }
-
-
-    createQuestionPalette();
-
-    showExamQuestion();
-
-    startTimer();
-}
-
-
-/* =========================================================
-   SHUFFLE
-========================================================= */
-
-function shuffleArray(array) {
-
-    for (
-        let i = array.length - 1;
-        i > 0;
-        i--
+    while (
+      result.length < count &&
+      (easy.length || medium.length || hard.length)
     ) {
 
-        const j =
-            Math.floor(
-                Math.random() * (i + 1)
-            );
+      if (easy.length) result.push(easy.pop());
 
+      if (
+        result.length < count &&
+        medium.length
+      ) {
+        result.push(medium.pop());
+      }
 
-        [
-            array[i],
-            array[j]
-        ] = [
-            array[j],
-            array[i]
-        ];
+      if (
+        result.length < count &&
+        hard.length
+      ) {
+        result.push(hard.pop());
+      }
     }
 
+    return shuffleArray(result).slice(0, count);
+  }
 
-    return array;
+
+  // ----------------------------------------------------------
+  // CET-STYLE SECTION SETUP
+  // ----------------------------------------------------------
+
+  currentTest = {
+
+    mode: "mock",
+
+    id: testId,
+
+    sections: {
+
+      physics: {
+        name: "Physics",
+        questions: mixedQuestions(physics, 50),
+        duration: 60 * 60
+      },
+
+      chemistry: {
+        name: "Chemistry",
+        questions: mixedQuestions(chemistry, 50),
+        duration: 60 * 60
+      },
+
+      mathematics: {
+        name: "Mathematics",
+        questions: mixedQuestions(mathematics, 50),
+        duration: 120 * 60
+      }
+
+    }
+
+  };
+
+
+  currentTest.sections.physics.questions =
+    currentTest.sections.physics.questions.map(q => ({
+      ...q,
+      section: "Physics"
+    }));
+
+  currentTest.sections.chemistry.questions =
+    currentTest.sections.chemistry.questions.map(q => ({
+      ...q,
+      section: "Chemistry"
+    }));
+
+  currentTest.sections.mathematics.questions =
+    currentTest.sections.mathematics.questions.map(q => ({
+      ...q,
+      section: "Mathematics"
+    }));
+
+
+  currentSection = "physics";
+
+  currentQuestionIndex = 0;
+
+  userAnswers = {};
+
+  markedQuestions = {};
+
+  testSubmitted = false;
+
+  startSection("physics");
 }
 
 
-/* =========================================================
-   EXAM QUESTION
-========================================================= */
+// ============================================================
+// CURRENT SECTION
+// ============================================================
 
-function showExamQuestion() {
-
-    const q =
-        examQuestions[currentQuestionIndex];
+let currentSection = "physics";
 
 
-    if (!q) {
-        return;
-    }
+function getCurrentSection() {
 
+  return currentTest.sections[currentSection];
 
-    const questionNumber =
-        getElement("questionNumber");
-
-    const subjectName =
-        getElement("subjectName");
-
-    const questionText =
-        getElement("questionText");
-
-
-    if (questionNumber) {
-
-        questionNumber.textContent =
-            "Question " +
-            (currentQuestionIndex + 1) +
-            " of " +
-            examQuestions.length;
-    }
-
-
-    if (subjectName) {
-        subjectName.textContent =
-            q.subject;
-    }
-
-
-    if (questionText) {
-        questionText.textContent =
-            q.question;
-    }
-
-
-    const optionsContainer =
-        getElement("options");
-
-
-    if (!optionsContainer) {
-        return;
-    }
-
-
-    optionsContainer.innerHTML = "";
-
-
-    q.options.forEach(function(option, index) {
-
-        const button =
-            document.createElement("button");
-
-
-        button.className = "option";
-
-
-        button.textContent =
-            String.fromCharCode(65 + index) +
-            ". " +
-            option;
-
-
-        if (
-            userAnswers[currentQuestionIndex] === index
-        ) {
-
-            button.classList.add("selected");
-        }
-
-
-        button.onclick = function() {
-
-            selectExamAnswer(index);
-
-        };
-
-
-        optionsContainer.appendChild(button);
-
-    });
-
-
-    updateQuestionStatus();
-
-    updateQuestionPalette();
 }
 
 
-/* =========================================================
-   EXAM ANSWER
-========================================================= */
+// ============================================================
+// START SECTION
+// ============================================================
 
-function selectExamAnswer(index) {
+function startSection(section) {
 
-    userAnswers[currentQuestionIndex] =
-        index;
+  stopTimer();
 
+  currentSection = section;
 
-    showExamQuestion();
+  currentQuestionIndex = 0;
+
+  remainingSeconds =
+    currentTest.sections[section].duration;
+
+  renderMockQuestion();
+
+  startTimer();
 }
 
 
-/* =========================================================
-   CLEAR RESPONSE
-========================================================= */
+// ============================================================
+// MOCK EXAM UI
+// ============================================================
 
-function clearResponse() {
+function renderMockQuestion() {
 
-    userAnswers[currentQuestionIndex] =
-        null;
+  const section =
+    getCurrentSection();
+
+  const q =
+    section.questions[currentQuestionIndex];
+
+  const app = getApp("app");
+
+  if (!app || !q) return;
 
 
-    showExamQuestion();
+  const total =
+    section.questions.length;
+
+
+  app.innerHTML = `
+
+    <div class="cet-exam">
+
+      <header class="cet-header">
+
+        <div>
+
+          <h2>MHT-CET 2027 Mock Test</h2>
+
+          <p>
+            ${currentTest.id}
+          </p>
+
+        </div>
+
+        <div class="cet-timer">
+
+          Time Left:
+          <strong id="examTimer">
+            ${formatTime(remainingSeconds)}
+          </strong>
+
+        </div>
+
+      </header>
+
+
+      <nav class="section-tabs">
+
+        <button
+          class="${currentSection === "physics" ? "active" : ""}"
+          onclick="switchSection('physics')"
+        >
+          Physics
+        </button>
+
+        <button
+          class="${currentSection === "chemistry" ? "active" : ""}"
+          onclick="switchSection('chemistry')"
+        >
+          Chemistry
+        </button>
+
+        <button
+          class="${currentSection === "mathematics" ? "active" : ""}"
+          onclick="switchSection('mathematics')"
+        >
+          Mathematics
+        </button>
+
+      </nav>
+
+
+      <div class="cet-layout">
+
+
+        <main class="cet-question-area">
+
+          <div class="question-top">
+
+            <strong>
+              ${section.name}
+            </strong>
+
+            <span>
+              Question
+              ${currentQuestionIndex + 1}
+              of
+              ${total}
+            </span>
+
+          </div>
+
+
+          <div class="question-card">
+
+            <h2>
+              ${q.question}
+            </h2>
+
+
+            <div class="cet-options">
+
+              ${q.options.map((option, index) => `
+
+                <label>
+
+                  <input
+                    type="radio"
+                    name="cetAnswer"
+                    value="${index}"
+                    ${
+                      userAnswers[q.id] === index
+                        ? "checked"
+                        : ""
+                    }
+                    onchange="saveMockAnswer(${index})"
+                  >
+
+                  <span>
+                    ${String.fromCharCode(65 + index)}.
+                    ${option}
+                  </span>
+
+                </label>
+
+              `).join("")}
+
+            </div>
+
+
+            <div class="cet-actions">
+
+              <button onclick="markForReview()">
+                ${markedQuestions[q.id]
+                  ? "Unmark Review"
+                  : "Mark for Review"}
+              </button>
+
+              <button onclick="clearMockAnswer()">
+                Clear Response
+              </button>
+
+              <button
+                onclick="previousMockQuestion()"
+              >
+                Previous
+              </button>
+
+              <button
+                onclick="nextMockQuestion()"
+              >
+                ${
+                  currentQuestionIndex === total - 1
+                    ? "Finish Section"
+                    : "Save & Next"
+                }
+              </button>
+
+            </div>
+
+          </div>
+
+        </main>
+
+
+        <aside class="cet-sidebar">
+
+          <h3>${section.name}</h3>
+
+          <div class="palette">
+
+            ${section.questions.map((item, index) => `
+
+              <button
+                class="${getMockPaletteClass(
+                  item.id,
+                  index
+                )}"
+                onclick="goToMockQuestion(${index})"
+              >
+                ${index + 1}
+              </button>
+
+            `).join("")}
+
+          </div>
+
+
+          <div class="palette-legend">
+
+            <p>● Answered</p>
+            <p>● Not Answered</p>
+            <p>● Marked for Review</p>
+
+          </div>
+
+
+          <button
+            class="submit-test"
+            onclick="submitMockTest()"
+          >
+            Submit Test
+          </button>
+
+        </aside>
+
+      </div>
+
+    </div>
+  `;
 }
 
 
-/* =========================================================
-   MARK FOR REVIEW
-========================================================= */
+// ============================================================
+// SECTION SWITCH
+// ============================================================
 
-function toggleMarkForReview() {
+function switchSection(section) {
 
-    markedForReview[currentQuestionIndex] =
-        !markedForReview[currentQuestionIndex];
+  if (testSubmitted) return;
 
+  stopTimer();
 
-    updateQuestionStatus();
+  currentSection = section;
 
-    updateQuestionPalette();
+  currentQuestionIndex = 0;
+
+  remainingSeconds =
+    currentTest.sections[section].duration;
+
+  renderMockQuestion();
+
+  startTimer();
 }
 
 
-/* =========================================================
-   QUESTION STATUS
-========================================================= */
+// ============================================================
+// MOCK ANSWER
+// ============================================================
 
-function updateQuestionStatus() {
+function saveMockAnswer(answer) {
 
-    const status =
-        getElement("questionStatus");
+  const section =
+    getCurrentSection();
+
+  const q =
+    section.questions[currentQuestionIndex];
+
+  userAnswers[q.id] = Number(answer);
+
+  renderMockQuestion();
+}
 
 
-    if (!status) {
-        return;
-    }
+// ============================================================
+// MOCK NAVIGATION
+// ============================================================
+
+function previousMockQuestion() {
+
+  if (currentQuestionIndex > 0) {
+
+    currentQuestionIndex--;
+
+    renderMockQuestion();
+
+  }
+}
 
 
-    if (markedForReview[currentQuestionIndex]) {
+function nextMockQuestion() {
 
-        status.textContent =
-            "Marked for Review";
+  const section =
+    getCurrentSection();
 
-    } else if (
-        userAnswers[currentQuestionIndex] !== null
-    ) {
+  if (
+    currentQuestionIndex <
+    section.questions.length - 1
+  ) {
 
-        status.textContent =
-            "Answered";
+    currentQuestionIndex++;
+
+    renderMockQuestion();
+
+  } else {
+
+    finishCurrentSection();
+
+  }
+}
+
+
+function goToMockQuestion(index) {
+
+  currentQuestionIndex = index;
+
+  renderMockQuestion();
+}
+
+
+// ============================================================
+// MARK FOR REVIEW
+// ============================================================
+
+function markForReview() {
+
+  const section =
+    getCurrentSection();
+
+  const q =
+    section.questions[currentQuestionIndex];
+
+  markedQuestions[q.id] =
+    !markedQuestions[q.id];
+
+  renderMockQuestion();
+}
+
+
+// ============================================================
+// CLEAR RESPONSE
+// ============================================================
+
+function clearMockAnswer() {
+
+  const section =
+    getCurrentSection();
+
+  const q =
+    section.questions[currentQuestionIndex];
+
+  delete userAnswers[q.id];
+
+  renderMockQuestion();
+}
+
+
+// ============================================================
+// FINISH SECTION
+// ============================================================
+
+function finishCurrentSection() {
+
+  stopTimer();
+
+  if (currentSection === "physics") {
+
+    const go =
+      confirm(
+        "Physics section completed. Move to Chemistry?"
+      );
+
+    if (go) {
+
+      startSection("chemistry");
 
     } else {
 
-        status.textContent =
-            "Not Answered";
-    }
-}
+      startTimer();
 
-
-/* =========================================================
-   QUESTION PALETTE
-========================================================= */
-
-function createQuestionPalette() {
-
-    const palette =
-        getElement("questionPalette");
-
-
-    if (!palette) {
-        return;
     }
 
+  } else if (currentSection === "chemistry") {
 
-    palette.innerHTML = "";
+    const go =
+      confirm(
+        "Physics + Chemistry section completed. Move to Mathematics?"
+      );
 
+    if (go) {
 
-    examQuestions.forEach(function(q, index) {
-
-        const button =
-            document.createElement("button");
-
-
-        button.textContent =
-            index + 1;
-
-
-        button.className =
-            "palette-question";
-
-
-        button.onclick = function() {
-
-            currentQuestionIndex =
-                index;
-
-            showExamQuestion();
-
-        };
-
-
-        palette.appendChild(button);
-
-    });
-}
-
-
-function updateQuestionPalette() {
-
-    const palette =
-        getElement("questionPalette");
-
-
-    if (!palette) {
-        return;
-    }
-
-
-    const buttons =
-        palette.querySelectorAll("button");
-
-
-    buttons.forEach(function(button, index) {
-
-        button.classList.remove(
-            "answered",
-            "review",
-            "current"
-        );
-
-
-        if (
-            index === currentQuestionIndex
-        ) {
-
-            button.classList.add(
-                "current"
-            );
-        }
-
-
-        if (
-            markedForReview[index]
-        ) {
-
-            button.classList.add(
-                "review"
-            );
-
-        } else if (
-            userAnswers[index] !== null
-        ) {
-
-            button.classList.add(
-                "answered"
-            );
-        }
-
-    });
-}
-
-
-/* =========================================================
-   PREVIOUS / NEXT EXAM QUESTION
-========================================================= */
-
-function previousQuestion() {
-
-    if (currentQuestionIndex > 0) {
-
-        currentQuestionIndex--;
-
-        showExamQuestion();
-    }
-}
-
-
-function nextQuestion() {
-
-    if (
-        currentQuestionIndex <
-        examQuestions.length - 1
-    ) {
-
-        currentQuestionIndex++;
-
-        showExamQuestion();
+      startSection("mathematics");
 
     } else {
 
-        alert(
-            "This is the last question."
-        );
+      startTimer();
+
     }
+
+  } else {
+
+    const submit =
+      confirm(
+        "Mathematics section completed. Submit the mock test?"
+      );
+
+    if (submit) {
+
+      submitMockTest();
+
+    } else {
+
+      startTimer();
+
+    }
+  }
 }
 
 
-/* =========================================================
-   TIMER
-========================================================= */
+// ============================================================
+// TIMER
+// ============================================================
 
 function startTimer() {
 
-    stopTimer();
+  stopTimer();
 
+  testTimer = setInterval(() => {
 
-    updateTimerDisplay();
+    remainingSeconds--;
 
+    const timer =
+      getApp("examTimer");
 
-    timerInterval =
-        setInterval(function() {
+    if (timer) {
 
-            timeRemaining--;
+      timer.textContent =
+        formatTime(remainingSeconds);
 
+    }
 
-            updateTimerDisplay();
+    if (remainingSeconds <= 0) {
 
+      stopTimer();
 
-            if (timeRemaining <= 0) {
+      alert(
+        `${getCurrentSection().name} time is over.`
+      );
 
-                stopTimer();
+      if (currentSection === "physics") {
 
-                alert(
-                    "Time is over. Your test will be submitted."
-                );
+        startSection("chemistry");
 
-                submitExam();
-            }
+      } else if (currentSection === "chemistry") {
 
-        }, 1000);
+        startSection("mathematics");
+
+      } else {
+
+        submitMockTest();
+
+      }
+
+    }
+
+  }, 1000);
 }
 
 
 function stopTimer() {
 
-    if (timerInterval) {
+  if (testTimer) {
 
-        clearInterval(timerInterval);
+    clearInterval(testTimer);
 
-        timerInterval = null;
-    }
+    testTimer = null;
+
+  }
 }
 
 
-function updateTimerDisplay() {
+function formatTime(seconds) {
 
-    const timer =
-        getElement("timer");
+  const h =
+    Math.floor(seconds / 3600);
 
+  const m =
+    Math.floor((seconds % 3600) / 60);
 
-    if (!timer) {
-        return;
-    }
+  const s =
+    seconds % 60;
 
+  if (h > 0) {
 
-    const hours =
-        Math.floor(
-            timeRemaining / 3600
-        );
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 
+  }
 
-    const minutes =
-        Math.floor(
-            (timeRemaining % 3600) / 60
-        );
-
-
-    const seconds =
-        timeRemaining % 60;
-
-
-    timer.textContent =
-        String(hours).padStart(2, "0") +
-        ":" +
-        String(minutes).padStart(2, "0") +
-        ":" +
-        String(seconds).padStart(2, "0");
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
 
-/* =========================================================
-   SUBMIT EXAM
-========================================================= */
+// ============================================================
+// SUBMIT MOCK TEST
+// ============================================================
 
-function submitExam() {
+function submitMockTest() {
 
-    stopTimer();
+  if (testSubmitted) return;
+
+  const confirmSubmit =
+    confirm(
+      "Are you sure you want to submit the complete mock test?"
+    );
+
+  if (!confirmSubmit) return;
+
+  testSubmitted = true;
+
+  stopTimer();
+
+  showMockResult();
+}
 
 
-    let correct = 0;
-    let wrong = 0;
-    let unanswered = 0;
+// ============================================================
+// MOCK RESULT
+// ============================================================
+
+function showMockResult() {
+
+  let total = 0;
+  let correct = 0;
+  let wrong = 0;
+  let unanswered = 0;
+
+  const subjectResults = {};
 
 
-    examQuestions.forEach(function(q, index) {
+  Object.keys(currentTest.sections).forEach(key => {
 
-        const answer =
-            userAnswers[index];
+    const section =
+      currentTest.sections[key];
+
+    let sectionCorrect = 0;
+    let sectionWrong = 0;
+    let sectionUnanswered = 0;
 
 
-        if (answer === null) {
+    section.questions.forEach(q => {
 
-            unanswered++;
+      total++;
 
-        } else if (
-            answer === q.answer
-        ) {
+      if (userAnswers[q.id] === undefined) {
 
-            correct++;
+        unanswered++;
+        sectionUnanswered++;
 
-        } else {
+      } else if (
+        userAnswers[q.id] === q.answer
+      ) {
 
-            wrong++;
-        }
+        correct++;
+        sectionCorrect++;
+
+      } else {
+
+        wrong++;
+        sectionWrong++;
+
+      }
 
     });
 
 
-    const attempted =
-        correct + wrong;
-
-
-    const total =
-        examQuestions.length;
-
-
-    const accuracy =
-        attempted > 0
-            ? Math.round(
-                (correct / attempted) * 100
-            )
-            : 0;
-
-
-    /*
-      Practice scoring:
-      Each question is counted as one point.
-      This keeps the engine simple until the
-      final verified exam marking scheme is set.
-    */
-
-    const score = correct;
-
-
-    lastResult = {
-
-        testName: currentTestName,
-
-        total: total,
-
-        correct: correct,
-
-        wrong: wrong,
-
-        unanswered: unanswered,
-
-        attempted: attempted,
-
-        accuracy: accuracy,
-
-        score: score,
-
-        date: new Date().toLocaleString()
-
+    subjectResults[section.name] = {
+      total: section.questions.length,
+      correct: sectionCorrect,
+      wrong: sectionWrong,
+      unanswered: sectionUnanswered
     };
 
-
-    saveTestStats(
-        attempted,
-        correct,
-        wrong
-    );
+  });
 
 
-    showResult();
+  const percentage =
+    total
+      ? ((correct / total) * 100).toFixed(2)
+      : 0;
+
+
+  const app = getApp("app");
+
+  if (!app) return;
+
+
+  app.innerHTML = `
+
+    <div class="result-page">
+
+      <h1>Mock Test Result</h1>
+
+      <h2>${currentTest.id}</h2>
+
+
+      <div class="result-summary">
+
+        <div>
+          <strong>${total}</strong>
+          <span>Total</span>
+        </div>
+
+        <div>
+          <strong>${correct}</strong>
+          <span>Correct</span>
+        </div>
+
+        <div>
+          <strong>${wrong}</strong>
+          <span>Wrong</span>
+        </div>
+
+        <div>
+          <strong>${unanswered}</strong>
+          <span>Unanswered</span>
+        </div>
+
+        <div>
+          <strong>${percentage}%</strong>
+          <span>Accuracy</span>
+        </div>
+
+      </div>
+
+
+      <h2>Subject-wise Performance</h2>
+
+
+      <div class="subject-results">
+
+        ${Object.keys(subjectResults).map(subject => {
+
+          const r =
+            subjectResults[subject];
+
+          return `
+
+            <div class="result-card">
+
+              <h3>${subject}</h3>
+
+              <p>
+                Total:
+                <strong>${r.total}</strong>
+              </p>
+
+              <p>
+                Correct:
+                <strong>${r.correct}</strong>
+              </p>
+
+              <p>
+                Wrong:
+                <strong>${r.wrong}</strong>
+              </p>
+
+              <p>
+                Unanswered:
+                <strong>${r.unanswered}</strong>
+              </p>
+
+            </div>
+
+          `;
+
+        }).join("")}
+
+      </div>
+
+
+      <div class="result-buttons">
+
+        <button onclick="showMockReview()">
+          Review Answers
+        </button>
+
+        <button onclick="showMockTests()">
+          Back to Mock Tests
+        </button>
+
+        <button onclick="showDashboard()">
+          Dashboard
+        </button>
+
+      </div>
+
+    </div>
+  `;
 }
 
 
-/* =========================================================
-   SAVE TEST STATS
-========================================================= */
+// ============================================================
+// REVIEW
+// ============================================================
 
-function saveTestStats(
-    attempted,
-    correct,
-    wrong
-) {
+function showMockReview() {
 
-    const stats =
-        getStats();
+  const allQuestions = [];
 
+  Object.keys(currentTest.sections).forEach(key => {
 
-    stats.questionsAttempted +=
-        attempted;
-
-
-    stats.correct +=
-        correct;
-
-
-    stats.wrong +=
-        wrong;
-
-
-    stats.testsCompleted++;
-
-
-    updateStudyStreak();
-
-
-    saveStats(stats);
-
-    updateDashboard();
-}
-
-
-/* =========================================================
-   RESULT PAGE
-========================================================= */
-
-function showResult() {
-
-    showPage("result");
-
-
-    if (!lastResult) {
-        return;
-    }
-
-
-    setText(
-        "resultTestName",
-        lastResult.testName
+    allQuestions.push(
+      ...currentTest.sections[key].questions
     );
 
-
-    setText(
-        "resultScore",
-        lastResult.score
-    );
+  });
 
 
-    setText(
-        "resultTotal",
-        lastResult.total
-    );
+  const app = getApp("app");
+
+  if (!app) return;
 
 
-    setText(
-        "resultCorrect",
-        lastResult.correct
-    );
+  app.innerHTML = `
+
+    <div class="review-page">
+
+      <button onclick="showMockResult()">
+        ← Back to Result
+      </button>
+
+      <h1>Answer Review</h1>
 
 
-    setText(
-        "resultWrong",
-        lastResult.wrong
-    );
+      ${allQuestions.map((q, index) => {
+
+        const selected =
+          userAnswers[q.id];
+
+        const status =
+          selected === undefined
+            ? "Unanswered"
+            : selected === q.answer
+              ? "Correct"
+              : "Wrong";
 
 
-    setText(
-        "resultUnanswered",
-        lastResult.unanswered
-    );
+        return `
 
+          <div class="review-card">
 
-    setText(
-        "resultAccuracy",
-        lastResult.accuracy + "%"
-    );
-}
-
-
-function setText(id, value) {
-
-    const element =
-        getElement(id);
-
-
-    if (element) {
-        element.textContent = value;
-    }
-}
-
-
-/* =========================================================
-   PERFORMANCE
-========================================================= */
-
-function updatePerformance() {
-
-    const stats =
-        getStats();
-
-
-    const accuracy =
-        stats.questionsAttempted > 0
-            ? Math.round(
-                (stats.correct /
-                    stats.questionsAttempted) * 100
-            )
-            : 0;
-
-
-    setText(
-        "performanceAttempted",
-        stats.questionsAttempted
-    );
-
-
-    setText(
-        "performanceTests",
-        stats.testsCompleted
-    );
-
-
-    setText(
-        "performanceCorrect",
-        stats.correct
-    );
-
-
-    setText(
-        "performanceWrong",
-        stats.wrong
-    );
-
-
-    setText(
-        "performanceAccuracy",
-        accuracy + "%"
-    );
-
-
-    setText(
-        "performanceStreak",
-        stats.studyStreak
-    );
-}
-
-
-/* =========================================================
-   PYQ PAGE
-========================================================= */
-
-function generatePYQList() {
-
-    const container =
-        getElement("pyqList");
-
-
-    if (!container) {
-        return;
-    }
-
-
-    container.innerHTML = "";
-
-
-    const years = [
-        2022,
-        2023,
-        2024,
-        2025,
-        2026
-    ];
-
-
-    years.forEach(function(year) {
-
-        const card =
-            document.createElement("div");
-
-
-        card.className =
-            "test-card";
-
-
-        card.innerHTML = `
-            <h3>MHT-CET ${year} PYQ</h3>
+            <h3>
+              ${index + 1}. ${q.question}
+            </h3>
 
             <p>
-                Previous-year question test.
+              <strong>Your Answer:</strong>
+              ${
+                selected === undefined
+                  ? "Not Answered"
+                  : q.options[selected]
+              }
             </p>
 
-            <button onclick="startPYQ(${year})">
-                Open PYQ
-            </button>
+            <p>
+              <strong>Correct Answer:</strong>
+              ${q.options[q.answer]}
+            </p>
+
+            <p>
+              <strong>Status:</strong>
+              ${status}
+            </p>
+
+            <p>
+              <strong>Explanation:</strong>
+              ${q.explanation}
+            </p>
+
+          </div>
+
         `;
 
+      }).join("")}
 
-        container.appendChild(card);
-
-    });
+    </div>
+  `;
 }
 
 
-/* =========================================================
-   START PYQ
-========================================================= */
+// ============================================================
+// PALETTE STATUS
+// ============================================================
 
-function startPYQ(year) {
+function getMockPaletteClass(id, index) {
 
-    /*
-      The current master file contains the PYQ
-      structure but does not contain verified
-      historical paper questions yet.
-    */
+  if (markedQuestions[id]) {
+    return "marked";
+  }
 
-    alert(
-        "The " +
-        year +
-        " PYQ section is ready for verified question data."
-    );
+  if (userAnswers[id] !== undefined) {
+    return "answered";
+  }
+
+  return "not-answered";
 }
 
 
-/* =========================================================
-   EXIT EXAM
-========================================================= */
+function getPaletteClass(id, index) {
 
-function exitExam() {
+  if (userAnswers[id] !== undefined) {
+    return "answered";
+  }
 
-    const confirmExit =
-        confirm(
-            "Are you sure you want to exit this test?"
-        );
+  return "not-answered";
+}
 
 
-    if (!confirmExit) {
-        return;
+// ============================================================
+// PRACTICE RESULT
+// ============================================================
+
+function showPracticeResult() {
+
+  let correct = 0;
+  let wrong = 0;
+  let unanswered = 0;
+
+  currentTest.questions.forEach(q => {
+
+    if (userAnswers[q.id] === undefined) {
+
+      unanswered++;
+
+    } else if (
+      userAnswers[q.id] === q.answer
+    ) {
+
+      correct++;
+
+    } else {
+
+      wrong++;
+
     }
 
+  });
 
-    stopTimer();
 
-    showPage("home");
+  const total =
+    currentTest.questions.length;
 
-    updateDashboard();
+  const accuracy =
+    total
+      ? ((correct / total) * 100).toFixed(2)
+      : 0;
+
+
+  const app = getApp("app");
+
+  app.innerHTML = `
+
+    <div class="result-page">
+
+      <h1>Practice Result</h1>
+
+      <h2>${currentTest.title}</h2>
+
+      <div class="result-summary">
+
+        <div>
+          <strong>${total}</strong>
+          <span>Total</span>
+        </div>
+
+        <div>
+          <strong>${correct}</strong>
+          <span>Correct</span>
+        </div>
+
+        <div>
+          <strong>${wrong}</strong>
+          <span>Wrong</span>
+        </div>
+
+        <div>
+          <strong>${unanswered}</strong>
+          <span>Unanswered</span>
+        </div>
+
+        <div>
+          <strong>${accuracy}%</strong>
+          <span>Accuracy</span>
+        </div>
+
+      </div>
+
+      <button onclick="showChapter('${currentSubject}', '${currentChapter.replace(/'/g, "\\'")}')">
+        Try Again
+      </button>
+
+      <button onclick="showDashboard()">
+        Dashboard
+      </button>
+
+    </div>
+
+  `;
 }
 
 
-/* =========================================================
-   RESULT NAVIGATION
-========================================================= */
+// ============================================================
+// PYQ PAGE
+// ============================================================
 
-function retryTest() {
+function showPYQTests() {
 
-    if (!examQuestions.length) {
-        return;
-    }
+  const app = getApp("app");
 
+  if (!app) return;
 
-    startExamWithQuestions(
-        [...examQuestions],
-        currentTestName
-    );
+  const tests =
+    window.pyqTests || [];
+
+  app.innerHTML = `
+
+    <div class="page">
+
+      <button onclick="showDashboard()">
+        ← Dashboard
+      </button>
+
+      <h1>Previous Year Questions</h1>
+
+      <div class="mock-grid">
+
+        ${tests.map(test => `
+
+          <button
+            onclick="startPYQ('${test.id}')"
+          >
+
+            <strong>
+              ${test.title}
+            </strong>
+
+            <span>
+              ${test.year}
+            </span>
+
+          </button>
+
+        `).join("")}
+
+      </div>
+
+    </div>
+  `;
 }
 
 
-function resultHome() {
+function startPYQ(id) {
 
-    stopTimer();
+  const test =
+    (window.pyqTests || [])
+      .find(t => t.id === id);
 
-    showPage("home");
+  if (!test) {
 
-    updateDashboard();
+    alert("PYQ test not found.");
+
+    return;
+  }
+
+  alert(
+    "This PYQ section is ready for verified PYQ questions to be added."
+  );
 }
 
 
-/* =========================================================
-   RESET PERFORMANCE
-========================================================= */
+// ============================================================
+// PERFORMANCE
+// ============================================================
 
-function resetPerformance() {
+function showPerformance() {
 
-    const confirmed =
-        confirm(
-            "Reset all performance statistics?"
-        );
+  const app = getApp("app");
 
+  if (!app) return;
 
-    if (!confirmed) {
-        return;
-    }
+  app.innerHTML = `
 
+    <div class="page">
 
-    localStorage.removeItem(
-        "mhtcetStats"
-    );
+      <button onclick="showDashboard()">
+        ← Dashboard
+      </button>
 
+      <h1>Performance</h1>
 
-    updateDashboard();
+      <div class="result-card">
 
-    updatePerformance();
+        <h2>Practice Performance</h2>
+
+        <p>
+          Complete chapter tests and mock tests to build
+          your performance history.
+        </p>
+
+      </div>
+
+    </div>
+
+  `;
 }
 
 
-/* =========================================================
-   SAFETY CHECK
-========================================================= */
+// ============================================================
+// START APPLICATION
+// ============================================================
 
-console.log(
-    "MHT-CET Portal loaded successfully."
-);
+document.addEventListener("DOMContentLoaded", () => {
 
+  showDashboard();
 
-if (typeof questions !== "undefined") {
-
-    console.log(
-        "Questions loaded:",
-        questions.length
-    );
-
-} else {
-
-    console.warn(
-        "questions.js was not loaded."
-    );
-}
+});
