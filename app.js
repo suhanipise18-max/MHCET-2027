@@ -476,7 +476,7 @@ function savePracticeProgress(isCorrect) {
     };
 
     progress.attempted++;
-
+localStorage.setItem("lastPracticeDate", new Date().toDateString());
  
     if (isCorrect) {
         progress.correct++;
