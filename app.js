@@ -1,7 +1,6 @@
-```javascript
 /* =========================================================
    MHT-CET 2027 PRACTICE PORTAL
-   Main Application
+   FINAL APP.JS
 ========================================================= */
 
 
@@ -31,7 +30,41 @@ let lastResult = null;
 
 
 /* =========================================================
-   STORAGE
+   PAGE HELPERS
+========================================================= */
+
+function getElement(id) {
+    return document.getElementById(id);
+}
+
+
+function hideAllPages() {
+
+    document.querySelectorAll(".page").forEach(function(page) {
+        page.style.display = "none";
+    });
+}
+
+
+function showPage(id) {
+
+    hideAllPages();
+
+    const page = getElement(id);
+
+    if (page) {
+        page.style.display = "block";
+    }
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+}
+
+
+/* =========================================================
+   LOCAL STORAGE
 ========================================================= */
 
 function getStats() {
@@ -59,10 +92,10 @@ function saveStats(stats) {
 
 
 /* =========================================================
-   INITIALIZE
+   INITIALIZATION
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function() {
 
     updateDashboard();
 
@@ -72,35 +105,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 /* =========================================================
-   PAGE MANAGEMENT
+   HOME
 ========================================================= */
-
-function hideAllPages() {
-
-    const pages = document.querySelectorAll(".page");
-
-    pages.forEach(function (page) {
-        page.style.display = "none";
-    });
-}
-
-
-function showPage(id) {
-
-    hideAllPages();
-
-    const page = document.getElementById(id);
-
-    if (page) {
-        page.style.display = "block";
-    }
-
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
-}
-
 
 function goHome() {
 
@@ -121,16 +127,16 @@ function updateDashboard() {
     const stats = getStats();
 
     const questionsElement =
-        document.getElementById("questionsAttempted");
+        getElement("questionsAttempted");
 
     const testsElement =
-        document.getElementById("testsCompleted");
+        getElement("testsCompleted");
 
     const accuracyElement =
-        document.getElementById("accuracy");
+        getElement("accuracy");
 
     const streakElement =
-        document.getElementById("studyStreak");
+        getElement("studyStreak");
 
 
     if (questionsElement) {
@@ -149,11 +155,10 @@ function updateDashboard() {
 
     if (stats.questionsAttempted > 0) {
 
-        accuracy =
-            Math.round(
-                (stats.correct /
-                    stats.questionsAttempted) * 100
-            );
+        accuracy = Math.round(
+            (stats.correct /
+                stats.questionsAttempted) * 100
+        );
     }
 
 
@@ -207,11 +212,8 @@ function updateStudyStreak() {
 
 
         if (difference === 1) {
-
             stats.studyStreak++;
-
         } else {
-
             stats.studyStreak = 1;
         }
     }
@@ -224,28 +226,30 @@ function updateStudyStreak() {
 
 
 /* =========================================================
-   HOME BUTTONS
+   HOME NAVIGATION
 ========================================================= */
 
 function showPractice() {
 
     showPage("practice");
 
-    document.getElementById(
-        "subjectSelection"
-    ).style.display = "block";
+    const subject =
+        getElement("subjectSelection");
 
-    document.getElementById(
-        "chapterSection"
-    ).style.display = "none";
+    const chapter =
+        getElement("chapterSection");
 
-    document.getElementById(
-        "difficultySection"
-    ).style.display = "none";
+    const difficulty =
+        getElement("difficultySection");
 
-    document.getElementById(
-        "practiceQuestion"
-    ).style.display = "none";
+    const question =
+        getElement("practiceQuestion");
+
+
+    if (subject) subject.style.display = "block";
+    if (chapter) chapter.style.display = "none";
+    if (difficulty) difficulty.style.display = "none";
+    if (question) question.style.display = "none";
 }
 
 
@@ -260,6 +264,8 @@ function showMockTests() {
 function showPYQ() {
 
     showPage("pyq");
+
+    generatePYQList();
 }
 
 
@@ -285,29 +291,38 @@ function selectSubject(subject) {
 
     currentSubject = subject;
 
-    document.getElementById(
-        "selectedSubject"
-    ).textContent = subject;
+    const selectedSubject =
+        getElement("selectedSubject");
+
+    if (selectedSubject) {
+        selectedSubject.textContent = subject;
+    }
 
 
-    document.getElementById(
-        "subjectSelection"
-    ).style.display = "none";
+    const subjectSelection =
+        getElement("subjectSelection");
+
+    const chapterSection =
+        getElement("chapterSection");
+
+    const difficultySection =
+        getElement("difficultySection");
+
+    const practiceQuestion =
+        getElement("practiceQuestion");
 
 
-    document.getElementById(
-        "chapterSection"
-    ).style.display = "block";
+    if (subjectSelection)
+        subjectSelection.style.display = "none";
 
+    if (chapterSection)
+        chapterSection.style.display = "block";
 
-    document.getElementById(
-        "difficultySection"
-    ).style.display = "none";
+    if (difficultySection)
+        difficultySection.style.display = "none";
 
-
-    document.getElementById(
-        "practiceQuestion"
-    ).style.display = "none";
+    if (practiceQuestion)
+        practiceQuestion.style.display = "none";
 
 
     generateChapterList(subject);
@@ -321,12 +336,21 @@ function selectSubject(subject) {
 function generateChapterList(subject) {
 
     const chapterList =
-        document.getElementById("chapterList");
+        getElement("chapterList");
+
+
+    if (!chapterList) {
+        return;
+    }
+
 
     chapterList.innerHTML = "";
 
 
-    if (typeof questions === "undefined") {
+    if (
+        typeof questions === "undefined" ||
+        !Array.isArray(questions)
+    ) {
 
         chapterList.innerHTML =
             "<p>Question bank not loaded.</p>";
@@ -338,37 +362,38 @@ function generateChapterList(subject) {
     const chapters = [];
 
 
-    questions.forEach(function (q) {
+    questions.forEach(function(q) {
 
         if (
             q.subject === subject &&
             !chapters.includes(q.chapter)
         ) {
-
             chapters.push(q.chapter);
         }
+
     });
 
 
     if (chapters.length === 0) {
 
         chapterList.innerHTML =
-            "<p>No chapters available yet.</p>";
+            "<p>No chapters available.</p>";
 
         return;
     }
 
 
-    chapters.forEach(function (chapter) {
+    chapters.forEach(function(chapter) {
 
         const card =
             document.createElement("div");
 
-        card.className = "chapter-card";
+        card.className =
+            "chapter-card";
 
 
         const count =
-            questions.filter(function (q) {
+            questions.filter(function(q) {
 
                 return (
                     q.subject === subject &&
@@ -384,8 +409,7 @@ function generateChapterList(subject) {
         `;
 
 
-        card.onclick = function () {
-
+        card.onclick = function() {
             selectChapter(chapter);
         };
 
@@ -402,24 +426,30 @@ function generateChapterList(subject) {
 
 function backToSubjects() {
 
-    document.getElementById(
-        "subjectSelection"
-    ).style.display = "block";
+    const subjectSelection =
+        getElement("subjectSelection");
+
+    const chapterSection =
+        getElement("chapterSection");
+
+    const difficultySection =
+        getElement("difficultySection");
+
+    const practiceQuestion =
+        getElement("practiceQuestion");
 
 
-    document.getElementById(
-        "chapterSection"
-    ).style.display = "none";
+    if (subjectSelection)
+        subjectSelection.style.display = "block";
 
+    if (chapterSection)
+        chapterSection.style.display = "none";
 
-    document.getElementById(
-        "difficultySection"
-    ).style.display = "none";
+    if (difficultySection)
+        difficultySection.style.display = "none";
 
-
-    document.getElementById(
-        "practiceQuestion"
-    ).style.display = "none";
+    if (practiceQuestion)
+        practiceQuestion.style.display = "none";
 }
 
 
@@ -431,32 +461,43 @@ function selectChapter(chapter) {
 
     currentChapter = chapter;
 
-    document.getElementById(
-        "selectedChapter"
-    ).textContent = chapter;
+    const selectedChapter =
+        getElement("selectedChapter");
+
+    if (selectedChapter) {
+        selectedChapter.textContent = chapter;
+    }
 
 
-    document.getElementById(
-        "chapterSection"
-    ).style.display = "none";
+    const chapterSection =
+        getElement("chapterSection");
+
+    const difficultySection =
+        getElement("difficultySection");
 
 
-    document.getElementById(
-        "difficultySection"
-    ).style.display = "block";
+    if (chapterSection)
+        chapterSection.style.display = "none";
+
+    if (difficultySection)
+        difficultySection.style.display = "block";
 }
 
 
 function backToChapters() {
 
-    document.getElementById(
-        "difficultySection"
-    ).style.display = "none";
+    const difficultySection =
+        getElement("difficultySection");
+
+    const chapterSection =
+        getElement("chapterSection");
 
 
-    document.getElementById(
-        "chapterSection"
-    ).style.display = "block";
+    if (difficultySection)
+        difficultySection.style.display = "none";
+
+    if (chapterSection)
+        chapterSection.style.display = "block";
 }
 
 
@@ -469,7 +510,10 @@ function startChapterPractice(difficulty) {
     currentDifficulty = difficulty;
 
 
-    if (typeof questions === "undefined") {
+    if (
+        typeof questions === "undefined" ||
+        !Array.isArray(questions)
+    ) {
 
         alert("Question bank not loaded.");
 
@@ -478,25 +522,16 @@ function startChapterPractice(difficulty) {
 
 
     practiceQuestions =
-        questions.filter(function (q) {
+        questions.filter(function(q) {
 
             return (
+                q.type === "practice" &&
                 q.subject === currentSubject &&
                 q.chapter === currentChapter &&
-                (
-                    !q.difficulty ||
-                    q.difficulty === difficulty
-                )
+                q.difficulty === difficulty
             );
 
         });
-
-
-    /*
-       Until the full difficulty-tagged question bank
-       is added, questions without a difficulty tag
-       will still appear.
-    */
 
 
     if (practiceQuestions.length === 0) {
@@ -504,7 +539,7 @@ function startChapterPractice(difficulty) {
         alert(
             "No " +
             difficulty +
-            " questions are available for this chapter yet."
+            " questions are available for this chapter."
         );
 
         return;
@@ -514,14 +549,18 @@ function startChapterPractice(difficulty) {
     currentPracticeIndex = 0;
 
 
-    document.getElementById(
-        "difficultySection"
-    ).style.display = "none";
+    const difficultySection =
+        getElement("difficultySection");
+
+    const practiceQuestion =
+        getElement("practiceQuestion");
 
 
-    document.getElementById(
-        "practiceQuestion"
-    ).style.display = "block";
+    if (difficultySection)
+        difficultySection.style.display = "none";
+
+    if (practiceQuestion)
+        practiceQuestion.style.display = "block";
 
 
     showPracticeQuestion();
@@ -543,47 +582,64 @@ function showPracticeQuestion() {
     }
 
 
-    document.getElementById(
-        "practiceQuestionNumber"
-    ).textContent =
-        "Question " +
-        (currentPracticeIndex + 1) +
-        " of " +
-        practiceQuestions.length;
+    const number =
+        getElement("practiceQuestionNumber");
+
+    const chapter =
+        getElement("practiceChapter");
+
+    const difficulty =
+        getElement("practiceDifficulty");
+
+    const questionText =
+        getElement("practiceQuestionText");
 
 
-    document.getElementById(
-        "practiceChapter"
-    ).textContent =
-        q.chapter;
+    if (number) {
+
+        number.textContent =
+            "Question " +
+            (currentPracticeIndex + 1) +
+            " of " +
+            practiceQuestions.length;
+    }
 
 
-    document.getElementById(
-        "practiceDifficulty"
-    ).textContent =
-        q.difficulty || currentDifficulty;
+    if (chapter) {
+        chapter.textContent = q.chapter;
+    }
 
 
-    document.getElementById(
-        "practiceQuestionText"
-    ).textContent =
-        q.question;
+    if (difficulty) {
+        difficulty.textContent = q.difficulty;
+    }
+
+
+    if (questionText) {
+        questionText.textContent = q.question;
+    }
 
 
     const optionsContainer =
-        document.getElementById(
-            "practiceOptions"
-        );
+        getElement("practiceOptions");
+
+
+    if (!optionsContainer) {
+        return;
+    }
+
 
     optionsContainer.innerHTML = "";
 
 
-    q.options.forEach(function (option, index) {
+    q.options.forEach(function(option, index) {
 
         const button =
             document.createElement("button");
 
+
         button.className = "option";
+
 
         button.textContent =
             String.fromCharCode(65 + index) +
@@ -591,11 +647,9 @@ function showPracticeQuestion() {
             option;
 
 
-        button.onclick = function () {
+        button.onclick = function() {
 
-            answerPracticeQuestion(
-                index
-            );
+            answerPracticeQuestion(index);
 
         };
 
@@ -605,9 +659,13 @@ function showPracticeQuestion() {
     });
 
 
-    document.getElementById(
-        "practiceFeedback"
-    ).innerHTML = "";
+    const feedback =
+        getElement("practiceFeedback");
+
+
+    if (feedback) {
+        feedback.innerHTML = "";
+    }
 }
 
 
@@ -621,70 +679,74 @@ function answerPracticeQuestion(selectedIndex) {
         practiceQuestions[currentPracticeIndex];
 
 
+    if (!q) {
+        return;
+    }
+
+
     const options =
         document.querySelectorAll(
             "#practiceOptions .option"
         );
 
 
-    options.forEach(function (option) {
-
+    options.forEach(function(option) {
         option.disabled = true;
-
     });
 
 
     const feedback =
-        document.getElementById(
-            "practiceFeedback"
-        );
+        getElement("practiceFeedback");
 
 
     if (selectedIndex === q.answer) {
 
-        options[selectedIndex]
-            .classList.add("correct");
+        if (options[selectedIndex]) {
+            options[selectedIndex]
+                .classList.add("correct");
+        }
 
 
-        feedback.innerHTML = `
-            <strong>Correct! ✓</strong>
-            <br>
-            ${q.explanation || ""}
-        `;
+        if (feedback) {
 
+            feedback.innerHTML = `
+                <strong>Correct! ✓</strong>
+                <br><br>
+                ${q.explanation || ""}
+            `;
 
-        feedback.style.background =
-            "#ecfdf3";
-
-        feedback.style.color =
-            "#166534";
-
+            feedback.style.background = "#ecfdf3";
+            feedback.style.color = "#166534";
+        }
 
     } else {
 
-        options[selectedIndex]
-            .classList.add("wrong");
+        if (options[selectedIndex]) {
+            options[selectedIndex]
+                .classList.add("wrong");
+        }
 
 
-        options[q.answer]
-            .classList.add("correct");
+        if (options[q.answer]) {
+            options[q.answer]
+                .classList.add("correct");
+        }
 
 
-        feedback.innerHTML = `
-            <strong>Incorrect ✗</strong>
-            <br>
-            Correct answer:
-            ${q.options[q.answer]}
-            <br><br>
-            ${q.explanation || ""}
-        `;
+        if (feedback) {
 
+            feedback.innerHTML = `
+                <strong>Incorrect ✗</strong>
+                <br><br>
+                Correct answer:
+                ${q.options[q.answer]}
+                <br><br>
+                ${q.explanation || ""}
+            `;
 
-        feedback.style.background =
-            "#fef2f2";
-
-        feedback.style.color =
-            "#991b1b";
+            feedback.style.background = "#fef2f2";
+            feedback.style.color = "#991b1b";
+        }
     }
 
 
@@ -697,11 +759,8 @@ function answerPracticeQuestion(selectedIndex) {
 
 
     if (selectedIndex === q.answer) {
-
         stats.correct++;
-
     } else {
-
         stats.wrong++;
     }
 
@@ -749,27 +808,29 @@ function nextPracticeQuestion() {
 
 function backToDifficulty() {
 
-    document.getElementById(
-        "practiceQuestion"
-    ).style.display = "none";
+    const practiceQuestion =
+        getElement("practiceQuestion");
+
+    const difficultySection =
+        getElement("difficultySection");
 
 
-    document.getElementById(
-        "difficultySection"
-    ).style.display = "block";
+    if (practiceQuestion)
+        practiceQuestion.style.display = "none";
+
+    if (difficultySection)
+        difficultySection.style.display = "block";
 }
 
 
 /* =========================================================
-   MOCK TESTS
+   MOCK TEST LIST
 ========================================================= */
 
 function generateMockTests() {
 
     const container =
-        document.getElementById(
-            "mockTestList"
-        );
+        getElement("mockTestList");
 
 
     if (!container) {
@@ -815,7 +876,7 @@ function startMockTest(testNumber) {
 
     if (
         typeof questions === "undefined" ||
-        questions.length === 0
+        !questions.length
     ) {
 
         alert("Question bank is empty.");
@@ -830,21 +891,17 @@ function startMockTest(testNumber) {
 
 
     /*
-       Temporary question selection.
-
-       Once the complete MHT-CET question bank
-       is added, this function will use the exact
-       test structure we define for the portal.
+      Current master bank contains 1680 practice slots.
+      Until verified full mock questions are added,
+      this creates a 150-question timed practice test.
     */
-
 
     examQuestions =
         shuffleArray(
-            [...questions]
-        ).slice(
-            0,
-            Math.min(10, questions.length)
-        );
+            questions.filter(function(q) {
+                return q.type === "practice";
+            }).slice()
+        ).slice(0, 150);
 
 
     startExamWithQuestions(
@@ -855,39 +912,12 @@ function startMockTest(testNumber) {
 
 
 /* =========================================================
-   GENERIC EXAM START
+   START EXAM
 ========================================================= */
 
 function startExam() {
 
-    if (
-        typeof questions === "undefined" ||
-        questions.length === 0
-    ) {
-
-        alert("Question bank is empty.");
-
-        return;
-    }
-
-
-    currentTestName =
-        "MHT-CET Mock Test";
-
-
-    examQuestions =
-        shuffleArray(
-            [...questions]
-        ).slice(
-            0,
-            Math.min(10, questions.length)
-        );
-
-
-    startExamWithQuestions(
-        examQuestions,
-        currentTestName
-    );
+    startMockTest(1);
 }
 
 
@@ -897,11 +927,19 @@ function startExamWithQuestions(
 ) {
 
     examQuestions =
-        questionSet;
+        questionSet || [];
 
 
     currentTestName =
-        testName;
+        testName || "MHT-CET Mock Test";
+
+
+    if (!examQuestions.length) {
+
+        alert("No questions available.");
+
+        return;
+    }
 
 
     currentQuestionIndex = 0;
@@ -920,24 +958,23 @@ function startExamWithQuestions(
 
 
     /*
-       Temporary timer.
-
-       This will be changed to the final
-       MHT-CET timing when we build the
-       final full mock-test configuration.
+      180-minute practice timer.
     */
 
-    timeRemaining =
-        20 * 60;
+    timeRemaining = 180 * 60;
 
 
     showPage("exam");
 
 
-    document.getElementById(
-        "examTitle"
-    ).textContent =
-        currentTestName;
+    const examTitle =
+        getElement("examTitle");
+
+
+    if (examTitle) {
+        examTitle.textContent =
+            currentTestName;
+    }
 
 
     createQuestionPalette();
@@ -987,9 +1024,7 @@ function shuffleArray(array) {
 function showExamQuestion() {
 
     const q =
-        examQuestions[
-            currentQuestionIndex
-        ];
+        examQuestions[currentQuestionIndex];
 
 
     if (!q) {
@@ -997,46 +1032,57 @@ function showExamQuestion() {
     }
 
 
-    document.getElementById(
-        "questionNumber"
-    ).textContent =
-        "Question " +
-        (currentQuestionIndex + 1) +
-        " of " +
-        examQuestions.length;
+    const questionNumber =
+        getElement("questionNumber");
+
+    const subjectName =
+        getElement("subjectName");
+
+    const questionText =
+        getElement("questionText");
 
 
-    document.getElementById(
-        "subjectName"
-    ).textContent =
-        q.subject;
+    if (questionNumber) {
+
+        questionNumber.textContent =
+            "Question " +
+            (currentQuestionIndex + 1) +
+            " of " +
+            examQuestions.length;
+    }
 
 
-    document.getElementById(
-        "questionText"
-    ).textContent =
-        q.question;
+    if (subjectName) {
+        subjectName.textContent =
+            q.subject;
+    }
+
+
+    if (questionText) {
+        questionText.textContent =
+            q.question;
+    }
 
 
     const optionsContainer =
-        document.getElementById(
-            "options"
-        );
+        getElement("options");
+
+
+    if (!optionsContainer) {
+        return;
+    }
 
 
     optionsContainer.innerHTML = "";
 
 
-    q.options.forEach(function (
-        option,
-        index
-    ) {
+    q.options.forEach(function(option, index) {
 
         const button =
             document.createElement("button");
 
-        button.className =
-            "option";
+
+        button.className = "option";
 
 
         button.textContent =
@@ -1046,27 +1092,21 @@ function showExamQuestion() {
 
 
         if (
-            userAnswers[
-                currentQuestionIndex
-            ] === index
+            userAnswers[currentQuestionIndex] === index
         ) {
 
-            button.classList.add(
-                "selected"
-            );
+            button.classList.add("selected");
         }
 
 
-        button.onclick = function () {
+        button.onclick = function() {
 
             selectExamAnswer(index);
 
         };
 
 
-        optionsContainer.appendChild(
-            button
-        );
+        optionsContainer.appendChild(button);
 
     });
 
@@ -1077,5 +1117,743 @@ function showExamQuestion() {
 }
 
 
-/* ==============================================*
-```
+/* =========================================================
+   EXAM ANSWER
+========================================================= */
+
+function selectExamAnswer(index) {
+
+    userAnswers[currentQuestionIndex] =
+        index;
+
+
+    showExamQuestion();
+}
+
+
+/* =========================================================
+   CLEAR RESPONSE
+========================================================= */
+
+function clearResponse() {
+
+    userAnswers[currentQuestionIndex] =
+        null;
+
+
+    showExamQuestion();
+}
+
+
+/* =========================================================
+   MARK FOR REVIEW
+========================================================= */
+
+function toggleMarkForReview() {
+
+    markedForReview[currentQuestionIndex] =
+        !markedForReview[currentQuestionIndex];
+
+
+    updateQuestionStatus();
+
+    updateQuestionPalette();
+}
+
+
+/* =========================================================
+   QUESTION STATUS
+========================================================= */
+
+function updateQuestionStatus() {
+
+    const status =
+        getElement("questionStatus");
+
+
+    if (!status) {
+        return;
+    }
+
+
+    if (markedForReview[currentQuestionIndex]) {
+
+        status.textContent =
+            "Marked for Review";
+
+    } else if (
+        userAnswers[currentQuestionIndex] !== null
+    ) {
+
+        status.textContent =
+            "Answered";
+
+    } else {
+
+        status.textContent =
+            "Not Answered";
+    }
+}
+
+
+/* =========================================================
+   QUESTION PALETTE
+========================================================= */
+
+function createQuestionPalette() {
+
+    const palette =
+        getElement("questionPalette");
+
+
+    if (!palette) {
+        return;
+    }
+
+
+    palette.innerHTML = "";
+
+
+    examQuestions.forEach(function(q, index) {
+
+        const button =
+            document.createElement("button");
+
+
+        button.textContent =
+            index + 1;
+
+
+        button.className =
+            "palette-question";
+
+
+        button.onclick = function() {
+
+            currentQuestionIndex =
+                index;
+
+            showExamQuestion();
+
+        };
+
+
+        palette.appendChild(button);
+
+    });
+}
+
+
+function updateQuestionPalette() {
+
+    const palette =
+        getElement("questionPalette");
+
+
+    if (!palette) {
+        return;
+    }
+
+
+    const buttons =
+        palette.querySelectorAll("button");
+
+
+    buttons.forEach(function(button, index) {
+
+        button.classList.remove(
+            "answered",
+            "review",
+            "current"
+        );
+
+
+        if (
+            index === currentQuestionIndex
+        ) {
+
+            button.classList.add(
+                "current"
+            );
+        }
+
+
+        if (
+            markedForReview[index]
+        ) {
+
+            button.classList.add(
+                "review"
+            );
+
+        } else if (
+            userAnswers[index] !== null
+        ) {
+
+            button.classList.add(
+                "answered"
+            );
+        }
+
+    });
+}
+
+
+/* =========================================================
+   PREVIOUS / NEXT EXAM QUESTION
+========================================================= */
+
+function previousQuestion() {
+
+    if (currentQuestionIndex > 0) {
+
+        currentQuestionIndex--;
+
+        showExamQuestion();
+    }
+}
+
+
+function nextQuestion() {
+
+    if (
+        currentQuestionIndex <
+        examQuestions.length - 1
+    ) {
+
+        currentQuestionIndex++;
+
+        showExamQuestion();
+
+    } else {
+
+        alert(
+            "This is the last question."
+        );
+    }
+}
+
+
+/* =========================================================
+   TIMER
+========================================================= */
+
+function startTimer() {
+
+    stopTimer();
+
+
+    updateTimerDisplay();
+
+
+    timerInterval =
+        setInterval(function() {
+
+            timeRemaining--;
+
+
+            updateTimerDisplay();
+
+
+            if (timeRemaining <= 0) {
+
+                stopTimer();
+
+                alert(
+                    "Time is over. Your test will be submitted."
+                );
+
+                submitExam();
+            }
+
+        }, 1000);
+}
+
+
+function stopTimer() {
+
+    if (timerInterval) {
+
+        clearInterval(timerInterval);
+
+        timerInterval = null;
+    }
+}
+
+
+function updateTimerDisplay() {
+
+    const timer =
+        getElement("timer");
+
+
+    if (!timer) {
+        return;
+    }
+
+
+    const hours =
+        Math.floor(
+            timeRemaining / 3600
+        );
+
+
+    const minutes =
+        Math.floor(
+            (timeRemaining % 3600) / 60
+        );
+
+
+    const seconds =
+        timeRemaining % 60;
+
+
+    timer.textContent =
+        String(hours).padStart(2, "0") +
+        ":" +
+        String(minutes).padStart(2, "0") +
+        ":" +
+        String(seconds).padStart(2, "0");
+}
+
+
+/* =========================================================
+   SUBMIT EXAM
+========================================================= */
+
+function submitExam() {
+
+    stopTimer();
+
+
+    let correct = 0;
+    let wrong = 0;
+    let unanswered = 0;
+
+
+    examQuestions.forEach(function(q, index) {
+
+        const answer =
+            userAnswers[index];
+
+
+        if (answer === null) {
+
+            unanswered++;
+
+        } else if (
+            answer === q.answer
+        ) {
+
+            correct++;
+
+        } else {
+
+            wrong++;
+        }
+
+    });
+
+
+    const attempted =
+        correct + wrong;
+
+
+    const total =
+        examQuestions.length;
+
+
+    const accuracy =
+        attempted > 0
+            ? Math.round(
+                (correct / attempted) * 100
+            )
+            : 0;
+
+
+    /*
+      Practice scoring:
+      Each question is counted as one point.
+      This keeps the engine simple until the
+      final verified exam marking scheme is set.
+    */
+
+    const score = correct;
+
+
+    lastResult = {
+
+        testName: currentTestName,
+
+        total: total,
+
+        correct: correct,
+
+        wrong: wrong,
+
+        unanswered: unanswered,
+
+        attempted: attempted,
+
+        accuracy: accuracy,
+
+        score: score,
+
+        date: new Date().toLocaleString()
+
+    };
+
+
+    saveTestStats(
+        attempted,
+        correct,
+        wrong
+    );
+
+
+    showResult();
+}
+
+
+/* =========================================================
+   SAVE TEST STATS
+========================================================= */
+
+function saveTestStats(
+    attempted,
+    correct,
+    wrong
+) {
+
+    const stats =
+        getStats();
+
+
+    stats.questionsAttempted +=
+        attempted;
+
+
+    stats.correct +=
+        correct;
+
+
+    stats.wrong +=
+        wrong;
+
+
+    stats.testsCompleted++;
+
+
+    updateStudyStreak();
+
+
+    saveStats(stats);
+
+    updateDashboard();
+}
+
+
+/* =========================================================
+   RESULT PAGE
+========================================================= */
+
+function showResult() {
+
+    showPage("result");
+
+
+    if (!lastResult) {
+        return;
+    }
+
+
+    setText(
+        "resultTestName",
+        lastResult.testName
+    );
+
+
+    setText(
+        "resultScore",
+        lastResult.score
+    );
+
+
+    setText(
+        "resultTotal",
+        lastResult.total
+    );
+
+
+    setText(
+        "resultCorrect",
+        lastResult.correct
+    );
+
+
+    setText(
+        "resultWrong",
+        lastResult.wrong
+    );
+
+
+    setText(
+        "resultUnanswered",
+        lastResult.unanswered
+    );
+
+
+    setText(
+        "resultAccuracy",
+        lastResult.accuracy + "%"
+    );
+}
+
+
+function setText(id, value) {
+
+    const element =
+        getElement(id);
+
+
+    if (element) {
+        element.textContent = value;
+    }
+}
+
+
+/* =========================================================
+   PERFORMANCE
+========================================================= */
+
+function updatePerformance() {
+
+    const stats =
+        getStats();
+
+
+    const accuracy =
+        stats.questionsAttempted > 0
+            ? Math.round(
+                (stats.correct /
+                    stats.questionsAttempted) * 100
+            )
+            : 0;
+
+
+    setText(
+        "performanceAttempted",
+        stats.questionsAttempted
+    );
+
+
+    setText(
+        "performanceTests",
+        stats.testsCompleted
+    );
+
+
+    setText(
+        "performanceCorrect",
+        stats.correct
+    );
+
+
+    setText(
+        "performanceWrong",
+        stats.wrong
+    );
+
+
+    setText(
+        "performanceAccuracy",
+        accuracy + "%"
+    );
+
+
+    setText(
+        "performanceStreak",
+        stats.studyStreak
+    );
+}
+
+
+/* =========================================================
+   PYQ PAGE
+========================================================= */
+
+function generatePYQList() {
+
+    const container =
+        getElement("pyqList");
+
+
+    if (!container) {
+        return;
+    }
+
+
+    container.innerHTML = "";
+
+
+    const years = [
+        2022,
+        2023,
+        2024,
+        2025,
+        2026
+    ];
+
+
+    years.forEach(function(year) {
+
+        const card =
+            document.createElement("div");
+
+
+        card.className =
+            "test-card";
+
+
+        card.innerHTML = `
+            <h3>MHT-CET ${year} PYQ</h3>
+
+            <p>
+                Previous-year question test.
+            </p>
+
+            <button onclick="startPYQ(${year})">
+                Open PYQ
+            </button>
+        `;
+
+
+        container.appendChild(card);
+
+    });
+}
+
+
+/* =========================================================
+   START PYQ
+========================================================= */
+
+function startPYQ(year) {
+
+    /*
+      The current master file contains the PYQ
+      structure but does not contain verified
+      historical paper questions yet.
+    */
+
+    alert(
+        "The " +
+        year +
+        " PYQ section is ready for verified question data."
+    );
+}
+
+
+/* =========================================================
+   EXIT EXAM
+========================================================= */
+
+function exitExam() {
+
+    const confirmExit =
+        confirm(
+            "Are you sure you want to exit this test?"
+        );
+
+
+    if (!confirmExit) {
+        return;
+    }
+
+
+    stopTimer();
+
+    showPage("home");
+
+    updateDashboard();
+}
+
+
+/* =========================================================
+   RESULT NAVIGATION
+========================================================= */
+
+function retryTest() {
+
+    if (!examQuestions.length) {
+        return;
+    }
+
+
+    startExamWithQuestions(
+        [...examQuestions],
+        currentTestName
+    );
+}
+
+
+function resultHome() {
+
+    stopTimer();
+
+    showPage("home");
+
+    updateDashboard();
+}
+
+
+/* =========================================================
+   RESET PERFORMANCE
+========================================================= */
+
+function resetPerformance() {
+
+    const confirmed =
+        confirm(
+            "Reset all performance statistics?"
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    localStorage.removeItem(
+        "mhtcetStats"
+    );
+
+
+    updateDashboard();
+
+    updatePerformance();
+}
+
+
+/* =========================================================
+   SAFETY CHECK
+========================================================= */
+
+console.log(
+    "MHT-CET Portal loaded successfully."
+);
+
+
+if (typeof questions !== "undefined") {
+
+    console.log(
+        "Questions loaded:",
+        questions.length
+    );
+
+} else {
+
+    console.warn(
+        "questions.js was not loaded."
+    );
+}
