@@ -1,576 +1,840 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>MHT-CET 2027 Practice Portal</title>
+    <title>MHT-CET 2027 Practice Portal</title>
 
-  <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-  <!-- ================= HOME / DASHBOARD ================= -->
+<!-- =========================
+     HEADER
+========================= -->
 
-  <section id="home">
-
-    <header class="header">
-
-      <div class="logo">
+<header class="top-header">
+    <div class="logo">
         MHT-CET <span>2027</span>
-      </div>
+    </div>
 
-      <div>
-        <button class="btn" onclick="showPractice()">
-          📚 Practice
+    <div class="header-right">
+        <span id="headerUser">Practice Portal</span>
+    </div>
+</header>
+
+
+<!-- =========================
+     HOME / DASHBOARD
+========================= -->
+
+<section id="home" class="page">
+
+    <div class="hero">
+        <h1>MHT-CET 2027 Practice Portal</h1>
+
+        <p>
+            Practice chapters, solve mock tests and revise previous year questions.
+        </p>
+    </div>
+
+
+    <!-- DASHBOARD STATS -->
+
+    <div class="stats-grid">
+
+        <div class="stat-card">
+            <h3 id="questionsAttempted">0</h3>
+            <p>Questions Attempted</p>
+        </div>
+
+        <div class="stat-card">
+            <h3 id="testsCompleted">0</h3>
+            <p>Tests Completed</p>
+        </div>
+
+        <div class="stat-card">
+            <h3 id="accuracy">0%</h3>
+            <p>Accuracy</p>
+        </div>
+
+        <div class="stat-card">
+            <h3 id="studyStreak">0</h3>
+            <p>Study Streak</p>
+        </div>
+
+    </div>
+
+
+    <!-- MAIN OPTIONS -->
+
+    <div class="dashboard-grid">
+
+        <div class="dashboard-card">
+            <div class="card-icon">📚</div>
+
+            <h2>Chapter Practice</h2>
+
+            <p>
+                Practice Physics, Chemistry and Mathematics chapter-wise.
+                Choose Easy, Medium or Hard questions.
+            </p>
+
+            <button onclick="showPractice()">
+                Start Practice
+            </button>
+        </div>
+
+
+        <div class="dashboard-card">
+            <div class="card-icon">📝</div>
+
+            <h2>Mock Tests</h2>
+
+            <p>
+                Attempt 50 full MHT-CET-style mock tests with a real exam-style
+                timer and question navigation.
+            </p>
+
+            <button onclick="showMockTests()">
+                View Mock Tests
+            </button>
+        </div>
+
+
+        <div class="dashboard-card">
+            <div class="card-icon">📖</div>
+
+            <h2>Previous Year Questions</h2>
+
+            <p>
+                Practice previous-year MHT-CET questions as timed tests.
+            </p>
+
+            <button onclick="showPYQ()">
+                View PYQs
+            </button>
+        </div>
+
+
+        <div class="dashboard-card">
+            <div class="card-icon">📊</div>
+
+            <h2>My Performance</h2>
+
+            <p>
+                Check your practice progress, accuracy and test performance.
+            </p>
+
+            <button onclick="showPerformance()">
+                View Performance
+            </button>
+        </div>
+
+    </div>
+
+
+    <div class="home-bottom">
+
+        <button class="secondary-btn" onclick="showInstructions()">
+            Exam Instructions
         </button>
 
-        <button class="btn" onclick="showInstructions()">
-          📝 Mock Test
+    </div>
+
+</section>
+
+
+
+<!-- =========================
+     CHAPTER PRACTICE
+========================= -->
+
+<section id="practice" class="page" style="display:none;">
+
+    <div class="page-header">
+
+        <button class="back-btn" onclick="goHome()">
+            ← Dashboard
         </button>
-      </div>
 
-    </header>
+        <h1>Chapter Practice</h1>
 
-
-    <main class="container">
-
-      <!-- Welcome -->
-
-      <div class="card">
-
-        <h1>Welcome to MHT-CET 2027</h1>
-
-        <p style="margin:15px 0;">
-          Practice Physics, Chemistry and Mathematics
-          with chapter-wise questions.
+        <p>
+            Select a subject and chapter to begin practicing.
         </p>
 
-        <button class="btn" onclick="showPractice()">
-          Start Practicing →
-        </button>
-
-      </div>
+    </div>
 
 
-      <!-- Progress -->
+    <!-- SUBJECT SELECTION -->
 
-      <h2 style="margin-bottom:15px;">
-        Your Progress
-      </h2>
+    <div id="subjectSelection">
 
-      <div class="dashboard-grid">
-
-        <div class="stat-card">
-          <h3>Questions Attempted</h3>
-          <p id="questionsAttempted">0</p>
-        </div>
-
-        <div class="stat-card">
-          <h3>Tests Completed</h3>
-          <p id="testsCompleted">0</p>
-        </div>
-
-        <div class="stat-card">
-          <h3>Accuracy</h3>
-        <p id="accuracy">0%</p>
-        </div>
-
-        <div class="stat-card">
-          <h3>Study Streak</h3>
-          <p id="studyStreak">0 Days</p>
-        </div>
-
-      </div>
-
-
-      <!-- Practice -->
-
-      <h2 style="margin:30px 0 15px;">
-        📚 Practice by Subject
-      </h2>
-
-      <div class="subject-grid">
-
-        <div class="subject-card"
-             onclick="showPractice()">
-
-          <h2>⚡ Physics</h2>
-
-          <p>
-            Practice Physics chapter-wise questions.
-          </p>
-
-        </div>
-
-
-        <div class="subject-card"
-             onclick="showPractice()">
-
-          <h2>🧪 Chemistry</h2>
-
-          <p>
-            Practice Chemistry chapter-wise questions.
-          </p>
-
-        </div>
-
-
-        <div class="subject-card"
-             onclick="showPractice()">
-
-          <h2>📐 Mathematics</h2>
-
-          <p>
-            Practice Mathematics chapter-wise questions.
-          </p>
-
-        </div>
-
-      </div>
-
-
-      <!-- Mock Test -->
-
-      <div class="card" style="margin-top:25px;">
-
-        <h2>📝 Mock Tests</h2>
-
-        <p style="margin:10px 0 15px;">
-          Take timed MHT-CET style practice tests.
-        </p>
-
-        <button class="btn" onclick="showInstructions()">
-          Take Mock Test →
-        </button>
-
-      </div>
-
-    </main>
-
-  </section>
-
-
-
-  <!-- ================= PRACTICE ================= -->
-
-  <section id="practice" style="display:none;">
-
-    <header class="header">
-
-      <div class="logo">
-        MHT-CET <span>2027</span>
-      </div>
-
-      <button class="btn" onclick="goHome()">
-        🏠 Dashboard
-      </button>
-
-    </header>
-
-
-    <main class="container">
-
-      <div class="card">
-
-        <h1>📚 Practice Questions</h1>
-
-        <p style="margin-top:10px;">
-          Choose a subject to start practicing.
-        </p>
-
-      </div>
-
-
-      <!-- Subject Selection -->
-
-      <div id="practiceSubjects">
+        <h2>Select Subject</h2>
 
         <div class="subject-grid">
 
-          <div class="subject-card"
-               onclick="selectSubject('Physics')">
-
-            <h2>⚡ Physics</h2>
-
-            <p>
-              Mechanics, Electricity, Optics and more.
-            </p>
-
-          </div>
+            <div class="subject-card" onclick="selectSubject('Physics')">
+                <div class="subject-icon">⚛️</div>
+                <h3>Physics</h3>
+                <p>Concepts, formulas and numerical practice</p>
+            </div>
 
 
-          <div class="subject-card"
-               onclick="selectSubject('Chemistry')">
-
-            <h2>🧪 Chemistry</h2>
-
-            <p>
-              Physical, Organic and Inorganic Chemistry.
-            </p>
-
-          </div>
+            <div class="subject-card" onclick="selectSubject('Chemistry')">
+                <div class="subject-icon">🧪</div>
+                <h3>Chemistry</h3>
+                <p>Physical, Organic and Inorganic Chemistry</p>
+            </div>
 
 
-          <div class="subject-card"
-               onclick="selectSubject('Mathematics')">
-
-            <h2>📐 Mathematics</h2>
-
-            <p>
-              Algebra, Calculus, Trigonometry and more.
-            </p>
-
-          </div>
+            <div class="subject-card" onclick="selectSubject('Mathematics')">
+                <div class="subject-icon">📐</div>
+                <h3>Mathematics</h3>
+                <p>Algebra, Calculus, Geometry and more</p>
+            </div>
 
         </div>
 
-      </div>
+    </div>
 
 
-      <!-- Chapter Selection -->
+    <!-- CHAPTER LIST -->
 
-      <div id="chapterSection" style="display:none;">
+    <div id="chapterSection" style="display:none;">
 
-        <div class="card">
+        <div class="section-title-row">
 
-          <button class="btn"
-                  onclick="backToSubjects()">
-            ← Subjects
-          </button>
+            <div>
+                <h2 id="selectedSubject">Physics</h2>
 
-          <h2 id="selectedSubject"
-              style="margin-top:20px;">
-            Chapters
-          </h2>
+                <p>
+                    Select a chapter
+                </p>
+            </div>
 
-          <p style="margin:10px 0 20px;">
-            Select a chapter to practice.
-          </p>
-
-          <div id="chapterList"
-               class="chapter-list">
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- Practice Question -->
-
-      <div id="practiceQuestion"
-           style="display:none;">
-
-        <div class="card">
-
-          <button class="btn"
-                  onclick="backToChapters()">
-            ← Chapters
-          </button>
-
-          <div style="
-            display:flex;
-            justify-content:space-between;
-            margin-top:20px;
-            margin-bottom:20px;
-          ">
-
-            <strong id="practiceQuestionNumber">
-              Question 1
-            </strong>
-
-            <strong id="practiceChapter">
-              Chapter
-            </strong>
-
-          </div>
-
-
-          <h2 id="practiceQuestionText">
-            Question
-          </h2>
-
-
-          <div id="practiceOptions"
-               style="margin-top:20px;">
-          </div>
-
-
-          <div id="practiceFeedback"
-               style="
-                 margin-top:20px;
-                 padding:15px;
-                 display:none;
-                 border-radius:10px;
-               ">
-          </div>
-
-
-          <div style="
-            margin-top:20px;
-            display:flex;
-            justify-content:space-between;
-          ">
-
-            <button class="btn"
-                    onclick="previousPracticeQuestion()">
-              ← Previous
+            <button class="secondary-btn" onclick="backToSubjects()">
+                ← Subjects
             </button>
 
-            <button class="btn"
-                    onclick="nextPracticeQuestion()">
-              Next →
-            </button>
+        </div>
 
-          </div>
+
+        <div id="chapterList" class="chapter-grid"></div>
+
+    </div>
+
+
+    <!-- DIFFICULTY SELECTION -->
+
+    <div id="difficultySection" style="display:none;">
+
+        <div class="section-title-row">
+
+            <div>
+                <h2 id="selectedChapter">Chapter</h2>
+
+                <p>
+                    Select difficulty
+                </p>
+            </div>
+
+            <button class="secondary-btn" onclick="backToChapters()">
+                ← Chapters
+            </button>
 
         </div>
 
-      </div>
 
-    </main>
+        <div class="difficulty-grid">
 
-  </section>
+            <div class="difficulty-card easy"
+                 onclick="startChapterPractice('Easy')">
 
+                <h3>Easy</h3>
 
+                <p>10 Questions</p>
 
-  <!-- ================= INSTRUCTIONS ================= -->
+                <span>Build your basics</span>
 
-  <section id="instructions" style="display:none;">
-
-    <header class="header">
-
-      <div class="logo">
-        MHT-CET <span>2027</span>
-      </div>
-
-    </header>
+            </div>
 
 
-    <main class="container">
+            <div class="difficulty-card medium"
+                 onclick="startChapterPractice('Medium')">
 
-      <div class="card">
+                <h3>Medium</h3>
 
-        <h1>📝 Mock Test Instructions</h1>
+                <p>10 Questions</p>
 
-        <br>
+                <span>Improve your concepts</span>
 
-        <p>✅ Total Questions: 10</p>
+            </div>
 
-        <p>⏱️ Time: 20 Minutes</p>
 
-        <p>📚 Physics, Chemistry & Mathematics</p>
+            <div class="difficulty-card hard"
+                 onclick="startChapterPractice('Hard')">
 
-        <p>📝 Four options for every question</p>
+                <h3>Hard</h3>
 
-        <p>📊 Result after submission</p>
+                <p>10 Questions</p>
 
-        <br>
+                <span>Challenge yourself</span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PRACTICE QUESTION -->
+
+    <div id="practiceQuestion" style="display:none;">
+
+        <div class="practice-top">
+
+            <button class="back-btn" onclick="backToDifficulty()">
+                ← Back
+            </button>
+
+            <div id="practiceQuestionNumber">
+                Question 1
+            </div>
+
+        </div>
+
+
+        <div class="question-card">
+
+            <div class="question-meta">
+
+                <span id="practiceChapter">
+                    Chapter
+                </span>
+
+                <span id="practiceDifficulty">
+                    Easy
+                </span>
+
+            </div>
+
+
+            <h2 id="practiceQuestionText">
+                Question
+            </h2>
+
+
+            <div id="practiceOptions" class="options-container">
+            </div>
+
+
+            <div id="practiceFeedback" class="feedback">
+            </div>
+
+        </div>
+
+
+        <div class="question-navigation">
+
+            <button onclick="previousPracticeQuestion()">
+                ← Previous
+            </button>
+
+            <button onclick="nextPracticeQuestion()">
+                Next →
+            </button>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =========================
+     MOCK TEST LIST
+========================= -->
+
+<section id="mockTests" class="page" style="display:none;">
+
+    <div class="page-header">
+
+        <button class="back-btn" onclick="goHome()">
+            ← Dashboard
+        </button>
+
+        <h1>MHT-CET Mock Tests</h1>
 
         <p>
-          This is an unofficial practice portal
-          for educational purposes.
+            Practice with full-length MHT-CET-style mock tests.
         </p>
 
-        <br>
+    </div>
 
-        <button class="btn"
-                onclick="startExam()">
-          Start Mock Test
+
+    <div class="test-info-banner">
+
+        <h3>50 Mock Tests Available</h3>
+
+        <p>
+            Each test has an exam-style timer, question palette,
+            navigation, marking for review and detailed results.
+        </p>
+
+    </div>
+
+
+    <div id="mockTestList" class="test-grid">
+
+        <!-- Mock tests will be generated by JavaScript -->
+
+    </div>
+
+</section>
+
+
+
+<!-- =========================
+     PYQ LIST
+========================= -->
+
+<section id="pyq" class="page" style="display:none;">
+
+    <div class="page-header">
+
+        <button class="back-btn" onclick="goHome()">
+            ← Dashboard
         </button>
 
-        <button class="btn"
-                onclick="goHome()"
-                style="margin-left:10px;">
-          Back
+        <h1>Previous Year Questions</h1>
+
+        <p>
+            Practice previous-year MHT-CET questions as timed tests.
+        </p>
+
+    </div>
+
+
+    <div class="pyq-year-grid">
+
+        <div class="year-card" onclick="openPYQYear(2026)">
+            <h2>2026</h2>
+            <p>Previous Year Questions</p>
+            <button>Start Test</button>
+        </div>
+
+
+        <div class="year-card" onclick="openPYQYear(2025)">
+            <h2>2025</h2>
+            <p>Previous Year Questions</p>
+            <button>Start Test</button>
+        </div>
+
+
+        <div class="year-card" onclick="openPYQYear(2024)">
+            <h2>2024</h2>
+            <p>Previous Year Questions</p>
+            <button>Start Test</button>
+        </div>
+
+
+        <div class="year-card" onclick="openPYQYear(2023)">
+            <h2>2023</h2>
+            <p>Previous Year Questions</p>
+            <button>Start Test</button>
+        </div>
+
+
+        <div class="year-card" onclick="openPYQYear(2022)">
+            <h2>2022</h2>
+            <p>Previous Year Questions</p>
+            <button>Start Test</button>
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =========================
+     PERFORMANCE
+========================= -->
+
+<section id="performance" class="page" style="display:none;">
+
+    <div class="page-header">
+
+        <button class="back-btn" onclick="goHome()">
+            ← Dashboard
         </button>
 
-      </div>
+        <h1>My Performance</h1>
 
-    </main>
+        <p>
+            Track your preparation progress.
+        </p>
 
-  </section>
-
-
-
-  <!-- ================= EXAM ================= -->
-
-  <section id="exam" style="display:none;">
-
-    <header class="header">
-
-      <div class="logo">
-        MHT-CET <span>2027</span>
-      </div>
-
-      <div>
-        ⏱️ Time:
-        <strong id="timer">20:00</strong>
-      </div>
-
-    </header>
+    </div>
 
 
-    <main class="container">
+    <div class="performance-grid">
 
-      <div class="card">
+        <div class="performance-card">
+            <h3>Total Questions</h3>
+            <strong id="performanceQuestions">0</strong>
+        </div>
 
-        <div style="
-          display:flex;
-          justify-content:space-between;
-          margin-bottom:20px;
-        ">
 
-          <strong id="questionNumber">
-            Question 1
-          </strong>
+        <div class="performance-card">
+            <h3>Correct Answers</h3>
+            <strong id="performanceCorrect">0</strong>
+        </div>
 
-          <strong id="subjectName">
-            Physics
-          </strong>
+
+        <div class="performance-card">
+            <h3>Wrong Answers</h3>
+            <strong id="performanceWrong">0</strong>
+        </div>
+
+
+        <div class="performance-card">
+            <h3>Accuracy</h3>
+            <strong id="performanceAccuracy">0%</strong>
+        </div>
+
+    </div>
+
+
+    <div class="subject-performance">
+
+        <h2>Subject Performance</h2>
+
+        <div id="subjectPerformanceList">
+            <!-- Generated by JavaScript -->
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =========================
+     INSTRUCTIONS
+========================= -->
+
+<section id="instructions" class="page" style="display:none;">
+
+    <div class="page-header">
+
+        <button class="back-btn" onclick="goHome()">
+            ← Dashboard
+        </button>
+
+        <h1>Exam Instructions</h1>
+
+    </div>
+
+
+    <div class="instructions-card">
+
+        <h2>MHT-CET Practice Test</h2>
+
+        <ul>
+
+            <li>Read each question carefully.</li>
+
+            <li>Select one answer for every question.</li>
+
+            <li>You can move between questions using Previous and Next.</li>
+
+            <li>Use the question palette to jump to any question.</li>
+
+            <li>You can mark questions for review.</li>
+
+            <li>You can change your answer before submitting.</li>
+
+            <li>The test will automatically end when the timer reaches zero.</li>
+
+            <li>Your result will be displayed after submission.</li>
+
+        </ul>
+
+
+        <button onclick="startExam()">
+            Start Mock Test
+        </button>
+
+    </div>
+
+</section>
+
+
+
+<!-- =========================
+     EXAM SCREEN
+========================= -->
+
+<section id="exam" class="page" style="display:none;">
+
+    <div class="exam-header">
+
+        <div>
+
+            <h2 id="examTitle">
+                MHT-CET Mock Test
+            </h2>
+
+            <span id="subjectName">
+                Physics
+            </span>
 
         </div>
 
 
-        <h2 id="questionText">
-          Question will appear here
-        </h2>
+        <div class="timer-box">
 
+            <span>Time Left</span>
 
-        <div id="options"
-             style="margin-top:20px;">
-        </div>
-
-
-        <div style="
-          display:flex;
-          justify-content:space-between;
-          margin-top:25px;
-        ">
-
-          <button class="btn"
-                  onclick="previousQuestion()">
-            ← Previous
-          </button>
-
-          <button class="btn"
-                  onclick="nextQuestion()">
-            Next →
-          </button>
+            <strong id="timer">
+                00:00:00
+            </strong>
 
         </div>
 
-      </div>
+    </div>
 
 
-      <div class="card">
+    <div class="exam-layout">
 
-        <h3>Questions</h3>
 
-        <div id="questionNumbers"
-             style="
-               display:flex;
-               flex-wrap:wrap;
-               gap:8px;
-               margin-top:15px;
-             ">
+        <!-- QUESTION AREA -->
+
+        <div class="exam-question-area">
+
+            <div class="question-header">
+
+                <span id="questionNumber">
+                    Question 1
+                </span>
+
+                <span id="questionStatus">
+                    Not Answered
+                </span>
+
+            </div>
+
+
+            <div class="question-card">
+
+                <h2 id="questionText">
+                    Question will appear here.
+                </h2>
+
+
+                <div id="options" class="options-container">
+                </div>
+
+            </div>
+
+
+            <div class="exam-actions">
+
+                <button onclick="previousQuestion()">
+                    ← Previous
+                </button>
+
+                <button onclick="markForReview()" class="review-btn">
+                    Mark for Review
+                </button>
+
+                <button onclick="clearResponse()" class="clear-btn">
+                    Clear Response
+                </button>
+
+                <button onclick="nextQuestion()">
+                    Next →
+                </button>
+
+            </div>
+
         </div>
 
-        <br>
 
-        <button class="btn"
+        <!-- QUESTION PALETTE -->
+
+        <aside class="question-palette">
+
+            <h3>Questions</h3>
+
+            <div id="questionNumbers">
+                <!-- Generated by JavaScript -->
+            </div>
+
+
+            <div class="palette-legend">
+
+                <div>
+                    <span class="legend-box answered"></span>
+                    Answered
+                </div>
+
+                <div>
+                    <span class="legend-box unanswered"></span>
+                    Not Answered
+                </div>
+
+                <div>
+                    <span class="legend-box review"></span>
+                    Marked for Review
+                </div>
+
+            </div>
+
+
+            <button
+                class="submit-test-btn"
                 onclick="submitTest()">
-          Submit Test
-        </button>
 
-      </div>
+                Submit Test
 
-    </main>
+            </button>
 
-  </section>
+        </aside>
 
+    </div>
 
-
-  <!-- ================= RESULT ================= -->
-
-  <section id="result" style="display:none;">
-
-    <header class="header">
-
-      <div class="logo">
-        MHT-CET <span>2027</span>
-      </div>
-
-    </header>
+</section>
 
 
-    <main class="container">
 
-      <div class="card">
+<!-- =========================
+     RESULT
+========================= -->
 
-        <h1>🎉 Test Completed!</h1>
+<section id="result" class="page" style="display:none;">
 
-        <br>
+    <div class="result-container">
 
-        <h2>
-          Score:
-          <span id="score">0 / 10</span>
-        </h2>
+        <h1>Test Completed 🎉</h1>
 
-        <br>
+        <p id="resultTestName">
+            MHT-CET Mock Test
+        </p>
 
-        <div class="dashboard-grid">
 
-          <div class="stat-card">
-            <h3>Correct</h3>
-            <p id="correct">0</p>
-          </div>
+        <div class="score-card">
 
-          <div class="stat-card">
-            <h3>Wrong</h3>
-            <p id="wrong">0</p>
-          </div>
+            <h2>Your Score</h2>
 
-          <div class="stat-card">
-            <h3>Unanswered</h3>
-            <p id="unanswered">0</p>
-          </div>
+            <div id="score">
+                0
+            </div>
 
         </div>
 
-      </div>
+
+        <div class="result-grid">
+
+            <div class="result-box">
+
+                <h3 id="correct">
+                    0
+                </h3>
+
+                <p>Correct</p>
+
+            </div>
 
 
-      <div class="card">
+            <div class="result-box">
 
-        <h2>Answer Review</h2>
+                <h3 id="wrong">
+                    0
+                </h3>
 
-        <div id="review"
-             style="margin-top:15px;">
+                <p>Wrong</p>
+
+            </div>
+
+
+            <div class="result-box">
+
+                <h3 id="unanswered">
+                    0
+                </h3>
+
+                <p>Unanswered</p>
+
+            </div>
+
+
+            <div class="result-box">
+
+                <h3 id="resultAccuracy">
+                    0%
+                </h3>
+
+                <p>Accuracy</p>
+
+            </div>
+
         </div>
 
-      </div>
+
+        <div class="result-actions">
+
+            <button onclick="showReview()">
+                Review Answers
+            </button>
+
+            <button onclick="goHome()">
+                Back to Dashboard
+            </button>
+
+        </div>
 
 
-      <button class="btn"
-              onclick="goHome()">
-        ← Back to Dashboard
-      </button>
+        <!-- ANSWER REVIEW -->
 
-    </main>
+        <div id="review" class="review-container">
 
-  </section>
+            <h2>Answer Review</h2>
+
+            <div id="reviewList">
+                <!-- Generated by JavaScript -->
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
 
 
 
-  <!-- ================= JAVASCRIPT ================= -->
+<!-- =========================
+     JAVASCRIPT FILES
+========================= -->
 
-  <script src="questions.js"></script>
-  <script src="app.js"></script>
+<script src="questions.js"></script>
+<script src="app.js"></script>
 
 </body>
-
 </html>
+```
+
+### After pasting
+
+Press **Ctrl + S**.
+
+Then **don't worry if the page looks ugly or some buttons don't work yet**. That's expected because the new `index.html` contains the structure, while the next step is to make `style.css` match it and then update `app.js`.
+
+**Next file: `style.css`.**
