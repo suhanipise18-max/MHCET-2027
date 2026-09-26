@@ -1,1211 +1,1536 @@
-// ============================================================
-// MHT-CET 2027 PRACTICE PORTAL
-// FINAL QUESTION DATABASE
-// ============================================================
-// 56 Chapters
-// 30 Questions per Chapter
-// 10 Easy + 10 Medium + 10 Hard
-// 50 Mock Tests
-// 5 PYQ Year Slots
-//
-// Questions are original MHT-CET-style practice questions.
-// Actual PYQs should only be added after verification.
-// ============================================================
+/* =========================================================
+   MHT-CET 2027 PRACTICE PORTAL
+   questions.js
+   ========================================================= */
 
-
-// ============================================================
-// CHAPTER CATALOG
-// ============================================================
+/* -----------------------------
+   CHAPTER CATALOG
+----------------------------- */
 
 const chapterCatalog = {
+    Physics: [
+        "Units and Measurements",
+        "Mathematical Methods",
+        "Kinematics",
+        "Laws of Motion",
+        "Gravitation",
+        "Mechanical Properties of Solids",
+        "Mechanical Properties of Fluids",
+        "Thermal Properties of Matter",
+        "Thermodynamics",
+        "Kinetic Theory of Gases",
+        "Oscillations",
+        "Waves",
+        "Electrostatics",
+        "Current Electricity",
+        "Magnetic Effects of Electric Current",
+        "Electromagnetic Induction",
+        "Optics",
+        "Dual Nature of Radiation and Matter"
+    ],
 
-  Physics: [
-    "Units and Measurements",
-    "Mathematical Methods",
-    "Motion in a Straight Line",
-    "Motion in a Plane",
-    "Laws of Motion",
-    "Gravitation",
-    "Properties of Matter",
-    "Thermodynamics",
-    "Oscillations",
-    "Waves",
-    "Electrostatics",
-    "Current Electricity",
-    "Magnetic Effects of Current",
-    "Electromagnetic Induction",
-    "Optics",
-    "Dual Nature of Matter",
-    "Atoms and Nuclei",
-    "Semiconductor Devices"
-  ],
+    Chemistry: [
+        "Some Basic Concepts of Chemistry",
+        "Structure of Atom",
+        "Chemical Bonding",
+        "Redox Reactions",
+        "States of Matter",
+        "Chemical Thermodynamics",
+        "Solutions",
+        "Ionic Equilibrium",
+        "Chemical Equilibrium",
+        "Electrochemistry",
+        "Chemical Kinetics",
+        "Solid State",
+        "Surface Chemistry",
+        "Hydrogen",
+        "s-Block Elements",
+        "p-Block Elements",
+        "d and f Block Elements",
+        "Organic Chemistry"
+    ],
 
-  Chemistry: [
-    "Some Basic Concepts of Chemistry",
-    "Structure of Atom",
-    "Classification of Elements",
-    "Chemical Bonding",
-    "States of Matter",
-    "Thermodynamics",
-    "Equilibrium",
-    "Redox Reactions",
-    "Solutions",
-    "Electrochemistry",
-    "Chemical Kinetics",
-    "Organic Chemistry Basics",
-    "Hydrocarbons",
-    "Alcohols, Phenols and Ethers",
-    "Aldehydes, Ketones and Carboxylic Acids",
-    "Amines",
-    "Biomolecules",
-    "Polymers"
-  ],
-
-  Mathematics: [
-    "Mathematical Logic",
-    "Matrices",
-    "Trigonometric Functions",
-    "Pair of Straight Lines",
-    "Circle",
-    "Conic Sections",
-    "Vectors",
-    "Three Dimensional Geometry",
-    "Probability",
-    "Statistics",
-    "Complex Numbers",
-    "Permutations and Combinations",
-    "Binomial Theorem",
-    "Sequences and Series",
-    "Functions",
-    "Limits",
-    "Continuity",
-    "Differentiation",
-    "Integration",
-    "Differential Equations"
-  ]
-
+    Mathematics: [
+        "Trigonometric Functions",
+        "Straight Line",
+        "Circle",
+        "Probability",
+        "Complex Numbers",
+        "Permutation and Combination",
+        "Binomial Theorem",
+        "Sequence and Series",
+        "Mathematical Logic",
+        "Matrices",
+        "Determinants",
+        "Vectors",
+        "Three Dimensional Geometry",
+        "Line and Plane",
+        "Differentiation",
+        "Applications of Derivatives",
+        "Indefinite Integration",
+        "Definite Integration",
+        "Differential Equations",
+        "Statistics"
+    ]
 };
 
 
-// ============================================================
-// QUESTION DATABASE
-// ============================================================
+/* -----------------------------
+   QUESTION BANK
+----------------------------- */
 
 const questions = [];
 
 let questionId = 1;
 
 
-// ============================================================
-// QUESTION CREATOR
-// ============================================================
+/* -----------------------------
+   ADD QUESTION FUNCTION
+----------------------------- */
 
 function addQuestion(
-  subject,
-  chapter,
-  difficulty,
-  question,
-  options,
-  answer,
-  explanation
-) {
-
-  questions.push({
-
-    id: questionId++,
-
     subject,
-
     chapter,
-
     difficulty,
-
-    type: "practice",
-
-    sourceType: "original",
-
-    source: "Original MHT-CET-style practice question",
-
     question,
-
     options,
-
     answer,
-
     explanation
-
-  });
-
-}
-
-
-// ============================================================
-// PHYSICS
-// ============================================================
-
-const physicsQuestions = {
-
-  "Units and Measurements": [
-
-    ["The SI unit of force is:",
-      ["Joule","Newton","Watt","Pascal"],1,
-      "Force is measured in newtons."],
-
-    ["The dimensional formula of velocity is:",
-      ["[LT⁻¹]","[LT]","[L²T⁻¹]","[T⁻¹]"],0,
-      "Velocity = displacement/time."],
-
-    ["Which quantity is dimensionless?",
-      ["Force","Work","Strain","Momentum"],2,
-      "Strain is a ratio and is dimensionless."],
-
-    ["1 nanometre is equal to:",
-      ["10⁻³ m","10⁻⁶ m","10⁻⁹ m","10⁻¹² m"],2,
-      "Nano represents 10⁻⁹."],
-
-    ["The number of significant figures in 0.00450 is:",
-      ["2","3","4","5"],1,
-      "The significant digits are 4, 5 and the trailing zero."],
-
-    ["The dimensional formula of work is:",
-      ["ML²T⁻²","MLT⁻²","ML²T⁻¹","MLT⁻¹"],0,
-      "Work = force × displacement."],
-
-    ["Which instrument is commonly used to measure small lengths accurately?",
-      ["Metre scale","Vernier caliper","Stopwatch","Ammeter"],1,
-      "A vernier caliper measures small dimensions accurately."],
-
-    ["If x = 5.0 ± 0.1 cm, the percentage uncertainty is:",
-      ["1%","2%","5%","10%"],1,
-      "Percentage uncertainty = (0.1/5.0) × 100 = 2%."],
-
-    ["The SI unit of pressure is:",
-      ["Newton","Pascal","Joule","Tesla"],1,
-      "Pressure is measured in pascals."],
-
-    ["Which pair has the same dimensions?",
-      ["Work and torque","Force and energy","Power and momentum","Pressure and energy"],0,
-      "Work and torque both have dimensions ML²T⁻²."]
-  ],
-
-
-  "Motion in a Straight Line": [
-
-    ["The slope of a position-time graph represents:",
-      ["Acceleration","Velocity","Force","Momentum"],1,
-      "Slope of position-time graph gives velocity."],
-
-    ["The area under a velocity-time graph gives:",
-      ["Acceleration","Displacement","Force","Speed"],1,
-      "Area under velocity-time graph gives displacement."],
-
-    ["A body moving with constant velocity has:",
-      ["Zero acceleration","Constant acceleration","Increasing acceleration","Variable acceleration"],0,
-      "Constant velocity means zero acceleration."],
-
-    ["The SI unit of acceleration is:",
-      ["m/s","m/s²","km/h","N"],1,
-      "Acceleration is measured in m/s²."],
-
-    ["If a body starts from rest, its initial velocity is:",
-      ["1 m/s","0","9.8 m/s","Cannot be determined"],1,
-      "Starting from rest means initial velocity is zero."],
-
-    ["For uniformly accelerated motion, v is given by:",
-      ["u + at","u + a/t","u − at²","ut + a"],0,
-      "The equation is v = u + at."],
-
-    ["A car travels 20 m in 4 s uniformly. Its average speed is:",
-      ["4 m/s","5 m/s","8 m/s","10 m/s"],1,
-      "Average speed = 20/4 = 5 m/s."],
-
-    ["If acceleration is negative while velocity is positive, the speed generally:",
-      ["Increases","Decreases","Remains zero","Becomes infinite"],1,
-      "Negative acceleration opposes positive velocity."],
-
-    ["For a freely falling body from rest, displacement after time t is:",
-      ["gt","gt²","½gt²","2gt"],2,
-      "Using s = ut + ½at² with u = 0."],
-
-    ["A particle changes velocity from 10 m/s to 30 m/s in 5 s. Its acceleration is:",
-      ["2 m/s²","4 m/s²","5 m/s²","8 m/s²"],1,
-      "a = (30 − 10)/5 = 4 m/s²."]
-  ],
-
-
-  "Laws of Motion": [
-
-    ["Newton's first law is also called the law of:",
-      ["Momentum","Inertia","Acceleration","Gravitation"],1,
-      "Newton's first law describes inertia."],
-
-    ["The SI unit of momentum is:",
-      ["N","kg m/s","J","W"],1,
-      "Momentum = mass × velocity."],
-
-    ["Newton's second law gives the relation:",
-      ["F = ma","F = m/a","F = a/m","F = mv"],0,
-      "Force equals mass multiplied by acceleration."],
-
-    ["Action and reaction forces act on:",
-      ["Same body","Different bodies","Only stationary bodies","No bodies"],1,
-      "They act on two different interacting bodies."],
-
-    ["Friction generally acts:",
-      ["Along motion","Opposite relative motion","Vertically upward","Always downward"],1,
-      "Friction opposes relative motion."],
-
-    ["If net force on an object is zero, its acceleration is:",
-      ["Zero","Maximum","Negative","Infinite"],0,
-      "From F = ma, zero net force gives zero acceleration."],
-
-    ["A 2 kg object accelerates at 3 m/s². Net force is:",
-      ["2 N","3 N","6 N","9 N"],2,
-      "F = ma = 2 × 3 = 6 N."],
-
-    ["The coefficient of friction is:",
-      ["Dimensionless","Measured in N","Measured in J","Measured in kg"],0,
-      "It is a ratio and therefore dimensionless."],
-
-    ["A passenger moves forward when a bus suddenly stops due to:",
-      ["Friction","Inertia","Gravity","Pressure"],1,
-      "The body tends to continue its state of motion."],
-
-    ["If mass is doubled while force remains constant, acceleration becomes:",
-      ["Double","Half","Four times","Unchanged"],1,
-      "a = F/m, so doubling mass halves acceleration."]
-  ],
-
-
-  "Electrostatics": [
-
-    ["The SI unit of electric charge is:",
-      ["Volt","Ampere","Coulomb","Ohm"],2,
-      "Charge is measured in coulombs."],
-
-    ["Like charges:",
-      ["Attract","Repel","Have no force","Always disappear"],1,
-      "Like charges repel."],
-
-    ["Coulomb's law describes force between:",
-      ["Masses","Charges","Currents only","Magnets only"],1,
-      "Coulomb's law describes electrostatic force between charges."],
-
-    ["Electric field is measured in:",
-      ["N/C","J/C","C/N","Ω"],0,
-      "Electric field = force/charge."],
-
-    ["Electric potential is a:",
-      ["Vector","Scalar","Tensor","Dimensionless vector"],1,
-      "Electric potential is a scalar quantity."],
-
-    ["The electric field inside an ideal conductor in electrostatic equilibrium is:",
-      ["Maximum","Zero","Infinite","Variable always"],1,
-      "The internal electrostatic field is zero."],
-
-    ["Two equal positive charges exert on each other a force that is:",
-      ["Attractive","Repulsive","Zero","Always downward"],1,
-      "Like charges repel."],
-
-    ["Capacitance is measured in:",
-      ["Farad","Henry","Tesla","Weber"],0,
-      "The SI unit of capacitance is farad."],
-
-    ["Increasing plate separation of an isolated parallel-plate capacitor generally decreases its:",
-      ["Charge","Capacitance","Electron mass","Resistance"],1,
-      "For a parallel plate capacitor C = εA/d."],
-
-    ["Electric potential energy depends on:",
-      ["Charges and their configuration","Only mass","Only temperature","Only time"],0,
-      "Electrostatic potential energy depends on the charge configuration."]
-  ]
-
-};
-
-
-// ============================================================
-// CHEMISTRY
-// ============================================================
-
-const chemistryQuestions = {
-
-  "Some Basic Concepts of Chemistry": [
-
-    ["The SI unit of amount of substance is:",
-      ["Gram","Mole","Kilogram","Litre"],1,
-      "The mole is the SI unit of amount of substance."],
-
-    ["Avogadro's number is approximately:",
-      ["6.022×10²³","6.022×10²²","3.011×10²³","9.8×10²³"],0,
-      "One mole contains approximately 6.022×10²³ particles."],
-
-    ["Molar mass of H₂O is approximately:",
-      ["16 g/mol","18 g/mol","20 g/mol","22 g/mol"],1,
-      "H₂O has molar mass 18 g/mol."],
-
-    ["The empirical formula represents:",
-      ["Actual molecular mass","Simplest whole-number ratio","Atomic number","Electron configuration"],1,
-      "It represents the simplest whole-number ratio of atoms."],
-
-    ["A limiting reagent is the reactant that:",
-      ["Remains completely unused","Is consumed first","Has highest mass","Is always a catalyst"],1,
-      "The limiting reagent is consumed first."],
-
-    ["The molecular mass of CO₂ is:",
-      ["28 u","32 u","44 u","48 u"],2,
-      "12 + 2(16) = 44 u."],
-
-    ["Mole fraction is:",
-      ["A concentration unit","Ratio of moles of a component to total moles","Mass percentage","Volume only"],1,
-      "Mole fraction = moles of component / total moles."],
-
-    ["The law of conservation of mass states that mass is:",
-      ["Created","Destroyed","Neither created nor destroyed","Always doubled"],2,
-      "Mass is conserved during a chemical reaction."],
-
-    ["Percentage composition is calculated from:",
-      ["Atomic numbers only","Mass contribution of elements","Temperature only","Pressure only"],1,
-      "It uses the mass contribution of each element."],
-
-    ["One mole of NaCl contains approximately:",
-      ["6.022×10²³ formula units","1 formula unit","100 formula units","3 formula units"],0,
-      "One mole contains Avogadro's number of formula units."]
-  ],
-
-
-  "Structure of Atom": [
-
-    ["The charge of an electron is:",
-      ["Positive","Negative","Zero","Variable"],1,
-      "An electron has negative charge."],
-
-    ["The nucleus contains:",
-      ["Only electrons","Protons and neutrons","Only neutrons","Electrons and photons"],1,
-      "The nucleus contains protons and neutrons."],
-
-    ["Atomic number represents number of:",
-      ["Neutrons","Protons","Nucleons","Shells"],1,
-      "Atomic number equals number of protons."],
-
-    ["Mass number equals:",
-      ["Protons + neutrons","Protons − neutrons","Electrons + protons","Only electrons"],0,
-      "Mass number = protons + neutrons."],
-
-    ["Isotopes have the same:",
-      ["Mass number","Atomic number","Number of neutrons","Physical mass"],1,
-      "Isotopes have the same atomic number but different neutron numbers."],
-
-    ["The maximum number of electrons in a shell is given by:",
-      ["n²","2n²","2n","n/2"],1,
-      "Maximum electrons in shell n = 2n²."],
-
-    ["The principal quantum number is represented by:",
-      ["n","l","m","s"],0,
-      "n is the principal quantum number."],
-
-    ["The electron has approximately:",
-      ["Positive charge","Negative charge","No charge","Double positive charge"],1,
-      "Electron carries negative charge."],
-
-    ["A photon has energy:",
-      ["E = mc","E = hν","E = ma","E = IR"],1,
-      "Photon energy is E = hν."],
-
-    ["The Lyman series lies mainly in the:",
-      ["Infrared","Visible","Ultraviolet","Microwave"],2,
-      "Lyman series lies in the ultraviolet region."]
-  ],
-
-
-  "Chemical Bonding": [
-
-    ["An ionic bond is formed mainly by:",
-      ["Electron transfer","Electron sharing only","Neutron transfer","Proton sharing"],0,
-      "Ionic bonding involves electron transfer."],
-
-    ["A covalent bond involves:",
-      ["Sharing of electrons","Transfer of neutrons","Loss of protons","Nuclear fusion"],0,
-      "Covalent bonding involves shared electrons."],
-
-    ["The shape of CH₄ is:",
-      ["Linear","Trigonal planar","Tetrahedral","Bent"],2,
-      "CH₄ has tetrahedral geometry."],
-
-    ["The bond angle in a linear molecule is:",
-      ["90°","109.5°","120°","180°"],3,
-      "A linear molecule has a bond angle of 180°."],
-
-    ["Hydrogen bonding is generally:",
-      ["Stronger than covalent bonding","An intermolecular or intramolecular attraction","A nuclear force","An ionic bond only"],1,
-      "Hydrogen bonding is an attractive interaction."],
-
-    ["Electronegativity generally increases across a period:",
-      ["Left to right","Right to left","Only downward","Randomly"],0,
-      "Electronegativity generally increases from left to right."],
-
-    ["A molecule with a symmetrical charge distribution can be:",
-      ["Nonpolar","Always ionic","Always metallic","Always charged"],0,
-      "Symmetry can cause dipoles to cancel."],
-
-    ["NH₃ has approximately:",
-      ["Linear shape","Trigonal pyramidal shape","Square planar shape","Linear planar shape"],1,
-      "NH₃ has trigonal pyramidal geometry."],
-
-    ["Lone pair repulsion is generally:",
-      ["Less than bond-pair repulsion","Greater than bond-pair repulsion","Zero","Always equal"],1,
-      "Lone pairs occupy more space and repel more strongly."],
-
-    ["The octet rule refers to:",
-      ["Eight protons","Eight valence electrons","Eight neutrons","Eight shells"],1,
-      "The octet rule concerns valence electrons."]
-  ]
-
-};
-
-
-// ============================================================
-// MATHEMATICS
-// ============================================================
-
-const mathematicsQuestions = {
-
-  "Matrices": [
-
-    ["A matrix having one row is called:",
-      ["Column matrix","Row matrix","Square matrix","Null matrix"],1,
-      "A one-row matrix is called a row matrix."],
-
-    ["A square matrix has:",
-      ["Equal rows and columns","Only one row","Only one column","No diagonal"],0,
-      "Rows and columns are equal."],
-
-    ["The determinant is defined for:",
-      ["Every rectangular matrix","Square matrix","Only row matrix","Only column matrix"],1,
-      "A determinant is defined for a square matrix."],
-
-    ["The identity matrix has:",
-      ["All entries zero","Diagonal entries 1 and other entries 0","All entries 1","Only negative entries"],1,
-      "That is the definition of an identity matrix."],
-
-    ["If A is a 2×3 matrix, the number of elements is:",
-      ["5","6","8","9"],1,
-      "2 × 3 = 6 elements."],
-
-    ["A matrix whose all elements are zero is called:",
-      ["Identity matrix","Null matrix","Unit matrix","Diagonal matrix"],1,
-      "It is called a null or zero matrix."],
-
-    ["For compatible matrices, matrix multiplication is generally:",
-      ["Commutative","Not commutative","Always zero","Undefined"],1,
-      "Generally AB ≠ BA."],
-
-    ["The transpose of a matrix changes:",
-      ["Rows into columns","Numbers into variables","Signs only","Determinants only"],0,
-      "Transpose interchanges rows and columns."],
-
-    ["If det(A)=0, matrix A is:",
-      ["Singular","Identity","Always diagonal","Unit"],0,
-      "A square matrix with zero determinant is singular."],
-
-    ["For a 2×2 matrix, determinant is calculated using:",
-      ["ad−bc","ab−cd","ac−bd","a+b+c+d"],0,
-      "For [[a,b],[c,d]], determinant = ad − bc."]
-  ],
-
-
-  "Trigonometric Functions": [
-
-    ["sin 0° equals:",
-      ["0","1","−1","∞"],0,
-      "sin 0° = 0."],
-
-    ["cos 0° equals:",
-      ["0","1","−1","1/2"],1,
-      "cos 0° = 1."],
-
-    ["tan 45° equals:",
-      ["0","1","√3","1/√3"],1,
-      "tan 45° = 1."],
-
-    ["sin²θ + cos²θ equals:",
-      ["0","1","2","sin θ"],1,
-      "This is the fundamental trigonometric identity."],
-
-    ["The period of sin x is:",
-      ["π","2π","3π","π/2"],1,
-      "The period of sin x is 2π."],
-
-    ["The maximum value of sin x is:",
-      ["−1","0","1","2"],2,
-      "The maximum value is 1."],
-
-    ["The minimum value of cos x is:",
-      ["−1","0","1","2"],0,
-      "The minimum value is −1."],
-
-    ["tan x can be written as:",
-      ["sin x/cos x","cos x/sin x","1/sin x","1/cos x"],0,
-      "tan x = sin x/cos x."],
-
-    ["sec x is equal to:",
-      ["1/sin x","1/cos x","sin x","cos x"],1,
-      "sec x = 1/cos x."],
-
-    ["The period of tan x is:",
-      ["π","2π","π/2","4π"],0,
-      "The period of tan x is π."]
-  ],
-
-
-  "Differentiation": [
-
-    ["The derivative of x² is:",
-      ["x","2x","x²","2"],1,
-      "d(x²)/dx = 2x."],
-
-    ["The derivative of a constant is:",
-      ["1","0","The constant","∞"],1,
-      "The derivative of a constant is zero."],
-
-    ["d(sin x)/dx is:",
-      ["cos x","−cos x","sin x","−sin x"],0,
-      "Derivative of sin x is cos x."],
-
-    ["d(cos x)/dx is:",
-      ["sin x","−sin x","cos x","−cos x"],1,
-      "Derivative of cos x is −sin x."],
-
-    ["The derivative represents the:",
-      ["Area only","Rate of change","Mass","Probability"],1,
-      "Derivative represents instantaneous rate of change."],
-
-    ["If y = 3x + 5, dy/dx is:",
-      ["3","5","3x","8"],0,
-      "The derivative of 3x+5 is 3."],
-
-    ["The derivative of eˣ is:",
-      ["1","xeˣ","eˣ","0"],2,
-      "eˣ is its own derivative."],
-
-    ["The derivative of ln x is:",
-      ["x","1/x","ln x","eˣ"],1,
-      "d(ln x)/dx = 1/x."],
-
-    ["At a local maximum, derivative is often:",
-      ["Zero","Infinite","Always negative","Always positive"],0,
-      "For a differentiable function, the derivative is zero at a stationary maximum."],
-
-    ["The chain rule is used for:",
-      ["Composite functions","Only constants","Only matrices","Only probabilities"],0,
-      "The chain rule is used to differentiate composite functions."]
-  ],
-
-
-  "Integration": [
-
-    ["∫x dx equals:",
-      ["x","x²/2 + C","2x","ln x"],1,
-      "∫x dx = x²/2 + C."],
-
-    ["∫1 dx equals:",
-      ["1","x + C","0","x²"],1,
-      "∫1 dx = x + C."],
-
-    ["Integration is commonly viewed as the inverse of:",
-      ["Addition","Differentiation","Multiplication","Probability"],1,
-      "Integration reverses differentiation."],
-
-    ["∫cos x dx equals:",
-      ["sin x + C","−sin x + C","cos x + C","tan x + C"],0,
-      "Integral of cos x is sin x + C."],
-
-    ["∫sin x dx equals:",
-      ["cos x + C","−cos x + C","sin x + C","tan x + C"],1,
-      "Integral of sin x is −cos x + C."],
-
-    ["The constant of integration is represented by:",
-      ["A","C","K only","0"],1,
-      "C represents the arbitrary constant."],
-
-    ["∫eˣ dx equals:",
-      ["eˣ+C","xeˣ+C","ln x+C","0"],0,
-      "eˣ is its own antiderivative."],
-
-    ["A definite integral has:",
-      ["No limits","Upper and lower limits","Only an upper limit","Only a lower limit"],1,
-      "A definite integral has upper and lower limits."],
-
-    ["The area under a positive curve can be represented by:",
-      ["A definite integral","Only a derivative","A matrix","A determinant"],0,
-      "Definite integration can represent area."],
-
-    ["∫1/x dx equals:",
-      ["x²/2+C","ln|x|+C","1/x²+C","x+C"],1,
-      "∫1/x dx = ln|x| + C."]
-  ]
-
-};
-
-
-// ============================================================
-// LOAD QUESTION SET
-// ============================================================
-
-function loadQuestionSet(subject, set) {
-
-  Object.keys(set).forEach(chapter => {
-
-    const data = set[chapter];
-
-    data.forEach((item, index) => {
-
-      const difficulty =
-        index < 4
-          ? "Easy"
-          : index < 7
-            ? "Medium"
-            : "Hard";
-
-      addQuestion(
+) {
+    questions.push({
+        id: `Q${String(questionId++).padStart(5, "0")}`,
         subject,
         chapter,
         difficulty,
-        item[0],
-        item[1],
-        item[2],
-        item[3]
-      );
-
+        type: "practice",
+        sourceType: "original",
+        source: "Original MHT-CET-style question",
+        question,
+        options,
+        answer,
+        explanation
     });
-
-  });
-
 }
 
 
-loadQuestionSet("Physics", physicsQuestions);
+/* =========================================================
+   PHYSICS QUESTIONS
+========================================================= */
 
-loadQuestionSet("Chemistry", chemistryQuestions);
+/* Units and Measurements */
 
-loadQuestionSet("Mathematics", mathematicsQuestions);
+addQuestion(
+    "Physics",
+    "Units and Measurements",
+    "Easy",
+    "The SI unit of force is:",
+    ["Joule", "Newton", "Watt", "Pascal"],
+    1,
+    "The SI unit of force is Newton."
+);
+
+addQuestion(
+    "Physics",
+    "Units and Measurements",
+    "Easy",
+    "Which of the following is a fundamental SI quantity?",
+    ["Force", "Energy", "Mass", "Pressure"],
+    2,
+    "Mass is one of the seven fundamental SI quantities."
+);
+
+addQuestion(
+    "Physics",
+    "Units and Measurements",
+    "Easy",
+    "The dimensional formula of velocity is:",
+    ["[LT⁻¹]", "[L²T⁻¹]", "[LT⁻²]", "[MLT⁻¹]"],
+    0,
+    "Velocity = displacement/time, so its dimensions are [LT⁻¹]."
+);
+
+addQuestion(
+    "Physics",
+    "Units and Measurements",
+    "Medium",
+    "The dimensional formula of force is:",
+    ["[MLT⁻²]", "[ML²T⁻²]", "[MLT⁻¹]", "[M⁰LT⁻²]"],
+    0,
+    "Force = mass × acceleration, so [F] = [MLT⁻²]."
+);
+
+addQuestion(
+    "Physics",
+    "Units and Measurements",
+    "Medium",
+    "Which quantity is dimensionless?",
+    ["Velocity", "Acceleration", "Strain", "Force"],
+    2,
+    "Strain is the ratio of two lengths and is therefore dimensionless."
+);
+
+addQuestion(
+    "Physics",
+    "Units and Measurements",
+    "Medium",
+    "One nanometre is equal to:",
+    ["10⁻³ m", "10⁻⁶ m", "10⁻⁹ m", "10⁻¹² m"],
+    2,
+    "The prefix nano represents 10⁻⁹."
+);
+
+addQuestion(
+    "Physics",
+    "Units and Measurements",
+    "Hard",
+    "The dimensions of energy are:",
+    ["[MLT⁻¹]", "[ML²T⁻²]", "[MLT⁻²]", "[M²L²T⁻²]"],
+    1,
+    "Energy = force × displacement = [MLT⁻²][L] = [ML²T⁻²]."
+);
+
+addQuestion(
+    "Physics",
+    "Units and Measurements",
+    "Hard",
+    "The percentage error in a measured quantity is 2%. If the quantity is squared, the percentage error becomes:",
+    ["1%", "2%", "4%", "8%"],
+    2,
+    "For a quantity raised to power n, percentage error is multiplied by n."
+);
+
+addQuestion(
+    "Physics",
+    "Units and Measurements",
+    "Hard",
+    "Which pair has the same dimensions?",
+    ["Work and Energy", "Force and Energy", "Power and Force", "Pressure and Energy"],
+    0,
+    "Work and energy both have dimensions [ML²T⁻²]."
+);
+
+addQuestion(
+    "Physics",
+    "Units and Measurements",
+    "Hard",
+    "The dimensional formula of power is:",
+    ["[ML²T⁻²]", "[ML²T⁻³]", "[MLT⁻²]", "[MLT⁻¹]"],
+    1,
+    "Power = energy/time = [ML²T⁻³]."
+);
 
 
-// ============================================================
-// GENERIC ORIGINAL QUESTIONS
-// ============================================================
-// Used only to fill chapters that do not yet have a dedicated
-// hand-written question set.
-// ============================================================
+/* Kinematics */
 
-function createExtraQuestions(subject, chapter, count) {
+addQuestion(
+    "Physics",
+    "Kinematics",
+    "Easy",
+    "The slope of a displacement-time graph represents:",
+    ["Acceleration", "Velocity", "Force", "Momentum"],
+    1,
+    "The slope of a displacement-time graph gives velocity."
+);
 
-  const templates = {
+addQuestion(
+    "Physics",
+    "Kinematics",
+    "Easy",
+    "Acceleration is defined as the rate of change of:",
+    ["Distance", "Velocity", "Displacement", "Momentum"],
+    1,
+    "Acceleration is the rate of change of velocity."
+);
 
-    Physics: [
+addQuestion(
+    "Physics",
+    "Kinematics",
+    "Easy",
+    "If a body moves with constant velocity, its acceleration is:",
+    ["Zero", "Constant but non-zero", "Increasing", "Decreasing"],
+    0,
+    "Constant velocity means there is no change in velocity."
+);
 
-      {
-        q: `Which type of quantity is commonly used while studying ${chapter}?`,
-        o: [
-          "Physical quantities with measurable values",
-          "Only biological quantities",
-          "Only historical values",
-          "Only genetic information"
+addQuestion(
+    "Physics",
+    "Kinematics",
+    "Medium",
+    "For uniformly accelerated motion, the equation v = u + at represents:",
+    ["Displacement", "Final velocity", "Acceleration", "Time"],
+    1,
+    "The equation gives final velocity v."
+);
+
+addQuestion(
+    "Physics",
+    "Kinematics",
+    "Medium",
+    "The area under a velocity-time graph gives:",
+    ["Acceleration", "Displacement", "Force", "Speed"],
+    1,
+    "The area under a velocity-time graph represents displacement."
+);
+
+addQuestion(
+    "Physics",
+    "Kinematics",
+    "Medium",
+    "A body starts from rest and accelerates uniformly. Its velocity after time t is:",
+    ["at", "a/t", "t/a", "a+t"],
+    0,
+    "Using v = u + at and u = 0, v = at."
+);
+
+addQuestion(
+    "Physics",
+    "Kinematics",
+    "Hard",
+    "For a freely falling body starting from rest, the distance travelled in time t is:",
+    ["gt", "gt²", "½gt²", "2gt²"],
+    2,
+    "Using s = ut + ½at², with u = 0 and a = g."
+);
+
+addQuestion(
+    "Physics",
+    "Kinematics",
+    "Hard",
+    "If the velocity of a particle is doubled, its kinetic energy becomes:",
+    ["Two times", "Three times", "Four times", "Half"],
+    2,
+    "Kinetic energy is proportional to v²."
+);
+
+addQuestion(
+    "Physics",
+    "Kinematics",
+    "Hard",
+    "A particle has zero velocity at an instant. Its acceleration at that instant:",
+    ["Must be zero", "May be non-zero", "Must be infinite", "Cannot exist"],
+    1,
+    "A particle can have zero instantaneous velocity while having non-zero acceleration."
+);
+
+addQuestion(
+    "Physics",
+    "Kinematics",
+    "Hard",
+    "For projectile motion neglecting air resistance, the horizontal acceleration is:",
+    ["g", "2g", "Zero", "g/2"],
+    2,
+    "There is no horizontal acceleration when air resistance is neglected."
+);
+
+
+/* Laws of Motion */
+
+addQuestion(
+    "Physics",
+    "Laws of Motion",
+    "Easy",
+    "Newton's first law is also called the law of:",
+    ["Acceleration", "Inertia", "Action and reaction", "Gravitation"],
+    1,
+    "Newton's first law is known as the law of inertia."
+);
+
+addQuestion(
+    "Physics",
+    "Laws of Motion",
+    "Easy",
+    "The SI unit of momentum is:",
+    ["kg m/s", "N/m", "kg/m", "J/s"],
+    0,
+    "Momentum = mass × velocity, giving kg m/s."
+);
+
+addQuestion(
+    "Physics",
+    "Laws of Motion",
+    "Easy",
+    "Newton's second law relates force to:",
+    ["Velocity", "Rate of change of momentum", "Displacement", "Energy"],
+    1,
+    "Newton's second law states that force is the rate of change of momentum."
+);
+
+addQuestion(
+    "Physics",
+    "Laws of Motion",
+    "Medium",
+    "The action and reaction forces act on:",
+    ["The same body", "Different bodies", "Only stationary bodies", "Only moving bodies"],
+    1,
+    "Action and reaction act on two different interacting bodies."
+);
+
+addQuestion(
+    "Physics",
+    "Laws of Motion",
+    "Medium",
+    "If the net force on a body is zero, its acceleration is:",
+    ["Zero", "Maximum", "Infinite", "Negative"],
+    0,
+    "From F = ma, zero net force gives zero acceleration."
+);
+
+addQuestion(
+    "Physics",
+    "Laws of Motion",
+    "Medium",
+    "Friction always acts:",
+    ["Along motion", "Opposite to relative motion or its tendency", "Vertically upward", "Vertically downward"],
+    1,
+    "Friction opposes relative motion or the tendency of relative motion."
+);
+
+addQuestion(
+    "Physics",
+    "Laws of Motion",
+    "Hard",
+    "If the mass of a body is doubled while the applied force remains constant, acceleration becomes:",
+    ["Double", "Half", "Four times", "Unchanged"],
+    1,
+    "From a = F/m, doubling mass halves acceleration."
+);
+
+addQuestion(
+    "Physics",
+    "Laws of Motion",
+    "Hard",
+    "The coefficient of friction is:",
+    ["A vector", "Dimensionless", "Measured in newtons", "Measured in joules"],
+    1,
+    "Coefficient of friction is a dimensionless ratio."
+);
+
+addQuestion(
+    "Physics",
+    "Laws of Motion",
+    "Hard",
+    "A body moving in a circle at constant speed has:",
+    ["Zero acceleration", "Centripetal acceleration", "No force", "Constant velocity"],
+    1,
+    "Its velocity direction changes, producing centripetal acceleration."
+);
+
+addQuestion(
+    "Physics",
+    "Laws of Motion",
+    "Hard",
+    "Centripetal force is directed:",
+    ["Away from centre", "Towards centre", "Tangentially", "Vertically"],
+    1,
+    "Centripetal force is always directed towards the centre of circular motion."
+);
+
+
+/* Electrostatics */
+
+addQuestion(
+    "Physics",
+    "Electrostatics",
+    "Easy",
+    "The SI unit of electric charge is:",
+    ["Volt", "Ampere", "Coulomb", "Ohm"],
+    2,
+    "Electric charge is measured in coulombs."
+);
+
+addQuestion(
+    "Physics",
+    "Electrostatics",
+    "Easy",
+    "Like charges:",
+    ["Attract", "Repel", "Have no interaction", "Become neutral"],
+    1,
+    "Like charges repel each other."
+);
+
+addQuestion(
+    "Physics",
+    "Electrostatics",
+    "Easy",
+    "The electric field inside an ideal conductor in electrostatic equilibrium is:",
+    ["Maximum", "Zero", "Infinite", "Variable"],
+    1,
+    "The electrostatic field inside a conductor at equilibrium is zero."
+);
+
+addQuestion(
+    "Physics",
+    "Electrostatics",
+    "Medium",
+    "Coulomb's law states that electrostatic force is inversely proportional to:",
+    ["Distance", "Square of distance", "Charge", "Mass"],
+    1,
+    "F ∝ 1/r²."
+);
+
+addQuestion(
+    "Physics",
+    "Electrostatics",
+    "Medium",
+    "Electric potential is a:",
+    ["Vector quantity", "Scalar quantity", "Tensor", "Dimensionless quantity"],
+    1,
+    "Electric potential has magnitude but no direction, so it is scalar."
+);
+
+addQuestion(
+    "Physics",
+    "Electrostatics",
+    "Medium",
+    "The SI unit of electric potential is:",
+    ["Coulomb", "Volt", "Newton", "Farad"],
+    1,
+    "Electric potential is measured in volts."
+);
+
+addQuestion(
+    "Physics",
+    "Electrostatics",
+    "Hard",
+    "The electric field due to a point charge varies with distance r as:",
+    ["r", "r²", "1/r", "1/r²"],
+    3,
+    "For a point charge, E = kq/r²."
+);
+
+addQuestion(
+    "Physics",
+    "Electrostatics",
+    "Hard",
+    "The capacitance of a capacitor depends on:",
+    ["Only charge", "Only potential", "Geometry and dielectric medium", "Only current"],
+    2,
+    "Capacitance depends on geometry and the dielectric between the plates."
+);
+
+addQuestion(
+    "Physics",
+    "Electrostatics",
+    "Hard",
+    "The energy stored in a capacitor is proportional to:",
+    ["CV", "CV²", "C/V", "V/C"],
+    1,
+    "Energy stored is U = ½CV²."
+);
+
+addQuestion(
+    "Physics",
+    "Electrostatics",
+    "Hard",
+    "Electric field lines never:",
+    ["Start from positive charges", "End on negative charges", "Intersect each other", "Represent field direction"],
+    2,
+    "Electric field lines cannot intersect because the field has one direction at a point."
+);
+
+
+/* =========================================================
+   CHEMISTRY QUESTIONS
+========================================================= */
+
+addQuestion(
+    "Chemistry",
+    "Some Basic Concepts of Chemistry",
+    "Easy",
+    "The SI unit of amount of substance is:",
+    ["Gram", "Mole", "Kilogram", "Litre"],
+    1,
+    "The SI unit is mole."
+);
+
+addQuestion(
+    "Chemistry",
+    "Some Basic Concepts of Chemistry",
+    "Easy",
+    "Avogadro's number is approximately:",
+    ["6.022 × 10²³", "9.8 × 10²", "3 × 10⁸", "1.6 × 10⁻¹⁹"],
+    0,
+    "Avogadro's number is 6.022 × 10²³ mol⁻¹."
+);
+
+addQuestion(
+    "Chemistry",
+    "Some Basic Concepts of Chemistry",
+    "Easy",
+    "The molecular mass of water is:",
+    ["16", "18", "20", "22"],
+    1,
+    "H₂O has molecular mass 2(1) + 16 = 18."
+);
+
+addQuestion(
+    "Chemistry",
+    "Some Basic Concepts of Chemistry",
+    "Medium",
+    "One mole of a substance contains:",
+    ["6.022 × 10²³ particles", "10² particles", "3 × 10⁸ particles", "1 particle"],
+    0,
+    "One mole contains Avogadro's number of particles."
+);
+
+addQuestion(
+    "Chemistry",
+    "Some Basic Concepts of Chemistry",
+    "Medium",
+    "The empirical formula represents:",
+    ["Actual number of atoms", "Simplest whole-number ratio of atoms", "Molecular mass", "Atomic number"],
+    1,
+    "Empirical formula gives the simplest whole-number ratio."
+);
+
+addQuestion(
+    "Chemistry",
+    "Some Basic Concepts of Chemistry",
+    "Medium",
+    "Molar mass is expressed in:",
+    ["g mol⁻¹", "mol g⁻¹", "g", "mol"],
+    0,
+    "Molar mass is commonly expressed in g mol⁻¹."
+);
+
+addQuestion(
+    "Chemistry",
+    "Some Basic Concepts of Chemistry",
+    "Hard",
+    "The limiting reagent is the reactant that:",
+    ["Remains after reaction", "Is consumed first", "Has greatest mass", "Has smallest volume"],
+    1,
+    "The limiting reagent gets completely consumed first."
+);
+
+addQuestion(
+    "Chemistry",
+    "Some Basic Concepts of Chemistry",
+    "Hard",
+    "Percentage composition is calculated using:",
+    ["Mass of element / molar mass × 100", "Volume / mass", "Mass × volume", "Moles × volume"],
+    0,
+    "Percentage composition is based on mass contribution relative to molar mass."
+);
+
+addQuestion(
+    "Chemistry",
+    "Some Basic Concepts of Chemistry",
+    "Hard",
+    "The law stating that elements combine in fixed ratios is:",
+    ["Law of conservation of mass", "Law of definite proportions", "Boyle's law", "Charles' law"],
+    1,
+    "The law of definite proportions states that a compound contains elements in fixed ratios."
+);
+
+addQuestion(
+    "Chemistry",
+    "Some Basic Concepts of Chemistry",
+    "Hard",
+    "If the number of moles is doubled, the number of particles:",
+    ["Halves", "Doubles", "Becomes zero", "Remains unchanged"],
+    1,
+    "Number of particles is directly proportional to number of moles."
+);
+
+
+/* Structure of Atom */
+
+addQuestion(
+    "Chemistry",
+    "Structure of Atom",
+    "Easy",
+    "The charge on an electron is:",
+    ["Positive", "Negative", "Zero", "Variable"],
+    1,
+    "An electron has a negative charge."
+);
+
+addQuestion(
+    "Chemistry",
+    "Structure of Atom",
+    "Easy",
+    "The nucleus contains:",
+    ["Only electrons", "Protons and neutrons", "Only neutrons", "Electrons and protons"],
+    1,
+    "The nucleus consists of protons and neutrons."
+);
+
+addQuestion(
+    "Chemistry",
+    "Structure of Atom",
+    "Easy",
+    "Atomic number represents the number of:",
+    ["Neutrons", "Protons", "Nucleons", "Shells"],
+    1,
+    "Atomic number equals the number of protons."
+);
+
+addQuestion(
+    "Chemistry",
+    "Structure of Atom",
+    "Medium",
+    "Isotopes have the same:",
+    ["Mass number", "Atomic number", "Number of neutrons", "Physical properties"],
+    1,
+    "Isotopes have the same atomic number but different neutron numbers."
+);
+
+addQuestion(
+    "Chemistry",
+    "Structure of Atom",
+    "Medium",
+    "Maximum electrons in the first shell are:",
+    ["1", "2", "8", "18"],
+    1,
+    "The first shell can hold a maximum of 2 electrons."
+);
+
+addQuestion(
+    "Chemistry",
+    "Structure of Atom",
+    "Medium",
+    "The principal quantum number is represented by:",
+    ["n", "l", "m", "s"],
+    0,
+    "The principal quantum number is n."
+);
+
+addQuestion(
+    "Chemistry",
+    "Structure of Atom",
+    "Hard",
+    "The maximum number of electrons in a shell with principal quantum number n is:",
+    ["n²", "2n", "2n²", "n³"],
+    2,
+    "Maximum electrons = 2n²."
+);
+
+addQuestion(
+    "Chemistry",
+    "Structure of Atom",
+    "Hard",
+    "The azimuthal quantum number determines:",
+    ["Size of orbital", "Shape of orbital", "Spin", "Nuclear charge"],
+    1,
+    "The azimuthal quantum number determines subshell and orbital shape."
+);
+
+addQuestion(
+    "Chemistry",
+    "Structure of Atom",
+    "Hard",
+    "An orbital can accommodate a maximum of:",
+    ["1 electron", "2 electrons", "4 electrons", "8 electrons"],
+    1,
+    "According to the Pauli exclusion principle, an orbital can hold two electrons."
+);
+
+addQuestion(
+    "Chemistry",
+    "Structure of Atom",
+    "Hard",
+    "The spin quantum number can have values:",
+    ["0 and 1", "+½ and −½", "−1 and +1", "Only +1"],
+    1,
+    "Electron spin quantum number has values +½ and −½."
+);
+
+
+/* Chemical Bonding */
+
+addQuestion(
+    "Chemistry",
+    "Chemical Bonding",
+    "Easy",
+    "A bond formed by transfer of electrons is called:",
+    ["Covalent bond", "Ionic bond", "Metallic bond", "Hydrogen bond"],
+    1,
+    "Transfer of electrons forms an ionic bond."
+);
+
+addQuestion(
+    "Chemistry",
+    "Chemical Bonding",
+    "Easy",
+    "A covalent bond involves:",
+    ["Transfer of protons", "Sharing of electrons", "Loss of neutrons", "Transfer of nuclei"],
+    1,
+    "Covalent bonds are formed by sharing electrons."
+);
+
+addQuestion(
+    "Chemistry",
+    "Chemical Bonding",
+    "Easy",
+    "The shape of methane molecule is:",
+    ["Linear", "Trigonal planar", "Tetrahedral", "Bent"],
+    2,
+    "CH₄ has tetrahedral geometry."
+);
+
+addQuestion(
+    "Chemistry",
+    "Chemical Bonding",
+    "Medium",
+    "The hybridization of carbon in methane is:",
+    ["sp", "sp²", "sp³", "dsp²"],
+    2,
+    "Carbon in methane is sp³ hybridized."
+);
+
+addQuestion(
+    "Chemistry",
+    "Chemical Bonding",
+    "Medium",
+    "A coordinate bond is formed when:",
+    ["Each atom contributes one electron", "One atom contributes both bonding electrons", "No electrons are shared", "Only protons participate"],
+    1,
+    "In a coordinate bond, both electrons are donated by one atom."
+);
+
+addQuestion(
+    "Chemistry",
+    "Chemical Bonding",
+    "Medium",
+    "The strongest among the following is generally:",
+    ["Single bond", "Double bond", "Triple bond", "Hydrogen bond"],
+    2,
+    "A triple covalent bond generally has the greatest bond strength."
+);
+
+addQuestion(
+    "Chemistry",
+    "Chemical Bonding",
+    "Hard",
+    "The hybridization of carbon in ethene is:",
+    ["sp", "sp²", "sp³", "dsp³"],
+    1,
+    "Each carbon in ethene is sp² hybridized."
+);
+
+addQuestion(
+    "Chemistry",
+    "Chemical Bonding",
+    "Hard",
+    "The bond angle in methane is approximately:",
+    ["90°", "109.5°", "120°", "180°"],
+    1,
+    "Tetrahedral methane has a bond angle of about 109.5°."
+);
+
+addQuestion(
+    "Chemistry",
+    "Chemical Bonding",
+    "Hard",
+    "A molecule with zero dipole moment may be:",
+    ["CO₂", "H₂O", "NH₃", "HCl"],
+    0,
+    "CO₂ is linear and its bond dipoles cancel."
+);
+
+addQuestion(
+    "Chemistry",
+    "Chemical Bonding",
+    "Hard",
+    "The octet rule is mainly related to:",
+    ["Stable electron configuration", "Nuclear decay", "Radioactivity", "Atomic mass"],
+    0,
+    "The octet rule describes the tendency to achieve a stable valence-shell configuration."
+);
+
+
+/* =========================================================
+   MATHEMATICS QUESTIONS
+========================================================= */
+
+addQuestion(
+    "Mathematics",
+    "Matrices",
+    "Easy",
+    "A matrix having one row and three columns has order:",
+    ["1 × 3", "3 × 1", "1 × 1", "3 × 3"],
+    0,
+    "Rows × columns gives 1 × 3."
+);
+
+addQuestion(
+    "Mathematics",
+    "Matrices",
+    "Easy",
+    "The identity matrix is a:",
+    ["Square matrix", "Row matrix", "Column matrix", "Zero matrix"],
+    0,
+    "An identity matrix is square."
+);
+
+addQuestion(
+    "Mathematics",
+    "Matrices",
+    "Easy",
+    "The determinant can be calculated only for:",
+    ["Square matrices", "Row matrices", "Column matrices", "All matrices"],
+    0,
+    "Determinants are defined for square matrices."
+);
+
+addQuestion(
+    "Mathematics",
+    "Matrices",
+    "Medium",
+    "The determinant of [[a,b],[c,d]] is:",
+    ["ad + bc", "ad − bc", "ab − cd", "ac − bd"],
+    1,
+    "The determinant is ad − bc."
+);
+
+addQuestion(
+    "Mathematics",
+    "Matrices",
+    "Medium",
+    "If A is an identity matrix, then A² is:",
+    ["A", "0", "2A", "A⁻¹"],
+    0,
+    "I × I = I."
+);
+
+addQuestion(
+    "Mathematics",
+    "Matrices",
+    "Medium",
+    "A matrix whose all elements are zero is called:",
+    ["Identity matrix", "Zero matrix", "Diagonal matrix", "Scalar matrix"],
+    1,
+    "A matrix containing only zero elements is a zero matrix."
+);
+
+addQuestion(
+    "Mathematics",
+    "Matrices",
+    "Hard",
+    "If det(A) = 0, matrix A is:",
+    ["Singular", "Identity", "Orthogonal", "Unitary"],
+    0,
+    "A matrix with zero determinant is singular."
+);
+
+addQuestion(
+    "Mathematics",
+    "Matrices",
+    "Hard",
+    "For a square matrix A, det(kA) for a 2 × 2 matrix is:",
+    ["k det(A)", "k² det(A)", "det(A)/k", "det(A)"],
+    1,
+    "For an n × n matrix, det(kA) = kⁿ det(A). For 2 × 2, it is k² det(A)."
+);
+
+addQuestion(
+    "Mathematics",
+    "Matrices",
+    "Hard",
+    "If A is invertible, then:",
+    ["det(A) = 0", "det(A) ≠ 0", "A must be zero", "A cannot be square"],
+    1,
+    "A square matrix is invertible only when its determinant is non-zero."
+);
+
+addQuestion(
+    "Mathematics",
+    "Matrices",
+    "Hard",
+    "The transpose of a transpose of matrix A is:",
+    ["Zero matrix", "A", "−A", "A⁻¹"],
+    1,
+    "(Aᵀ)ᵀ = A."
+);
+
+
+/* Trigonometric Functions */
+
+addQuestion(
+    "Mathematics",
+    "Trigonometric Functions",
+    "Easy",
+    "sin 90° is:",
+    ["0", "1", "−1", "1/2"],
+    1,
+    "sin 90° = 1."
+);
+
+addQuestion(
+    "Mathematics",
+    "Trigonometric Functions",
+    "Easy",
+    "cos 0° is:",
+    ["0", "1", "−1", "1/2"],
+    1,
+    "cos 0° = 1."
+);
+
+addQuestion(
+    "Mathematics",
+    "Trigonometric Functions",
+    "Easy",
+    "tan 45° is:",
+    ["0", "1", "√3", "1/√3"],
+    1,
+    "tan 45° = 1."
+);
+
+addQuestion(
+    "Mathematics",
+    "Trigonometric Functions",
+    "Medium",
+    "sin²θ + cos²θ equals:",
+    ["0", "1", "2", "sin θ"],
+    1,
+    "The fundamental identity is sin²θ + cos²θ = 1."
+);
+
+addQuestion(
+    "Mathematics",
+    "Trigonometric Functions",
+    "Medium",
+    "The period of sin x is:",
+    ["π", "2π", "π/2", "4π"],
+    1,
+    "The period of sin x is 2π."
+);
+
+addQuestion(
+    "Mathematics",
+    "Trigonometric Functions",
+    "Medium",
+    "The maximum value of sin x is:",
+    ["0", "1", "−1", "2"],
+    1,
+    "The maximum value of sine is 1."
+);
+
+addQuestion(
+    "Mathematics",
+    "Trigonometric Functions",
+    "Hard",
+    "The range of cos x is:",
+    ["[0,1]", "[-1,1]", "[-∞,∞]", "[1,∞]"],
+    1,
+    "Cosine ranges from −1 to 1."
+);
+
+addQuestion(
+    "Mathematics",
+    "Trigonometric Functions",
+    "Hard",
+    "If tan θ = 1 and θ lies in the first quadrant, θ is:",
+    ["30°", "45°", "60°", "90°"],
+    1,
+    "tan 45° = 1."
+);
+
+addQuestion(
+    "Mathematics",
+    "Trigonometric Functions",
+    "Hard",
+    "sec²θ − tan²θ equals:",
+    ["0", "1", "2", "sin²θ"],
+    1,
+    "Using 1 + tan²θ = sec²θ, the difference is 1."
+);
+
+addQuestion(
+    "Mathematics",
+    "Trigonometric Functions",
+    "Hard",
+    "The value of sin 30° is:",
+    ["1", "√3/2", "1/2", "0"],
+    2,
+    "sin 30° = 1/2."
+);
+
+
+/* Differentiation */
+
+addQuestion(
+    "Mathematics",
+    "Differentiation",
+    "Easy",
+    "The derivative of x² is:",
+    ["x", "2x", "x²", "2"],
+    1,
+    "d(x²)/dx = 2x."
+);
+
+addQuestion(
+    "Mathematics",
+    "Differentiation",
+    "Easy",
+    "The derivative of a constant is:",
+    ["1", "0", "The constant", "Undefined"],
+    1,
+    "The derivative of a constant is zero."
+);
+
+addQuestion(
+    "Mathematics",
+    "Differentiation",
+    "Easy",
+    "The derivative of sin x is:",
+    ["cos x", "−cos x", "sin x", "−sin x"],
+    0,
+    "d(sin x)/dx = cos x."
+);
+
+addQuestion(
+    "Mathematics",
+    "Differentiation",
+    "Medium",
+    "The derivative of cos x is:",
+    ["sin x", "−sin x", "cos x", "−cos x"],
+    1,
+    "d(cos x)/dx = −sin x."
+);
+
+addQuestion(
+    "Mathematics",
+    "Differentiation",
+    "Medium",
+    "The derivative of eˣ is:",
+    ["1", "x eˣ", "eˣ", "ln x"],
+    2,
+    "The derivative of eˣ is eˣ."
+);
+
+addQuestion(
+    "Mathematics",
+    "Differentiation",
+    "Medium",
+    "The derivative of ln x is:",
+    ["x", "1/x", "ln x", "eˣ"],
+    1,
+    "d(ln x)/dx = 1/x."
+);
+
+addQuestion(
+    "Mathematics",
+    "Differentiation",
+    "Hard",
+    "If y = x³ + 2x, dy/dx is:",
+    ["3x² + 2", "x² + 2", "3x + 2", "x³ + 2"],
+    0,
+    "Differentiate term by term."
+);
+
+addQuestion(
+    "Mathematics",
+    "Differentiation",
+    "Hard",
+    "The derivative of sin²x is:",
+    ["2sin x", "2cos x", "2sin x cos x", "sin 2x only"],
+    2,
+    "Using chain rule, derivative is 2 sin x cos x."
+);
+
+addQuestion(
+    "Mathematics",
+    "Differentiation",
+    "Hard",
+    "If f'(x) = 0 throughout an interval, f(x) is:",
+    ["Constant", "Increasing", "Decreasing", "Undefined"],
+    0,
+    "A zero derivative throughout an interval indicates a constant function."
+);
+
+addQuestion(
+    "Mathematics",
+    "Differentiation",
+    "Hard",
+    "The derivative of xⁿ is:",
+    ["nxⁿ", "nxⁿ⁻¹", "xⁿ⁻¹", "n + x"],
+    1,
+    "By the power rule, d(xⁿ)/dx = nxⁿ⁻¹."
+);
+
+
+/* =========================================================
+   AUTOMATIC QUESTION GENERATOR
+========================================================= */
+
+/*
+   We already have 40 hand-written questions.
+   The generator fills every chapter to exactly 30 questions.
+
+   These are ORIGINAL practice questions.
+   They are NOT labelled as PYQs.
+*/
+
+function generateQuestion(subject, chapter, difficulty, number) {
+
+    const templates = {
+
+        Physics: [
+            {
+                q: `In ${chapter}, which of the following is a commonly used SI quantity?`,
+                options: ["Length", "Time", "Mass", "All of these"],
+                answer: 3,
+                explanation: "Length, time and mass are SI quantities."
+            },
+            {
+                q: `Which statement is associated with ${chapter}?`,
+                options: [
+                    "It follows physical laws",
+                    "It has no measurable quantity",
+                    "It cannot be studied experimentally",
+                    "It has no mathematical representation"
+                ],
+                answer: 0,
+                explanation: "Physical concepts can be described using measurable quantities and physical laws."
+            },
+            {
+                q: `A numerical problem based on ${chapter} generally requires:`,
+                options: [
+                    "Understanding the relevant concept",
+                    "Only memorisation",
+                    "No units",
+                    "No calculation"
+                ],
+                answer: 0,
+                explanation: "Numerical problems require understanding the relevant physical concept."
+            }
         ],
-        a: 0,
-        e: `${chapter} is studied using measurable physical quantities and physical laws.`
-      },
 
-      {
-        q: `A reliable approach to a numerical problem from ${chapter} is to first:`,
-        o: [
-          "Identify the given quantities and required quantity",
-          "Ignore the units",
-          "Guess the answer",
-          "Ignore the given information"
+        Chemistry: [
+            {
+                q: `Which statement is most appropriate while studying ${chapter}?`,
+                options: [
+                    "Chemical concepts can be represented quantitatively",
+                    "Chemistry contains no measurable quantities",
+                    "Atoms cannot form compounds",
+                    "Chemical reactions never involve energy"
+                ],
+                answer: 0,
+                explanation: "Chemical concepts can be represented using measurable quantities and equations."
+            },
+            {
+                q: `A chemical calculation related to ${chapter} should begin by:`,
+                options: [
+                    "Identifying the given quantities and required quantity",
+                    "Ignoring units",
+                    "Guessing the answer",
+                    "Changing all values randomly"
+                ],
+                answer: 0,
+                explanation: "Identifying the given and required quantities is a useful first step."
+            },
+            {
+                q: `Which approach is useful for solving a ${chapter} problem?`,
+                options: [
+                    "Use the relevant chemical principle",
+                    "Ignore the chemical equation",
+                    "Ignore units",
+                    "Avoid calculations"
+                ],
+                answer: 0,
+                explanation: "The relevant chemical principle should be applied systematically."
+            }
         ],
-        a: 0,
-        e: "Identifying the given information and required quantity helps select the appropriate physical relation."
-      },
 
-      {
-        q: `While solving a ${chapter} numerical, units should generally be:`,
-        o: [
-          "Checked carefully",
-          "Always ignored",
-          "Changed randomly",
-          "Removed from the calculation"
-        ],
-        a: 0,
-        e: "Checking units helps verify the consistency of a physical calculation."
-      }
+        Mathematics: [
+            {
+                q: `A problem based on ${chapter} should first be approached by:`,
+                options: [
+                    "Identifying the given information",
+                    "Guessing randomly",
+                    "Ignoring conditions",
+                    "Skipping definitions"
+                ],
+                answer: 0,
+                explanation: "Identify the given information and conditions before solving."
+            },
+            {
+                q: `Which is important while solving a ${chapter} problem?`,
+                options: [
+                    "Using the correct mathematical relation",
+                    "Ignoring restrictions",
+                    "Changing the question",
+                    "Skipping calculations"
+                ],
+                answer: 0,
+                explanation: "Using the correct mathematical relation is essential."
+            },
+            {
+                q: `A mathematical expression related to ${chapter} should be simplified:`,
+                options: [
+                    "Using valid mathematical rules",
+                    "By changing signs randomly",
+                    "By ignoring brackets",
+                    "Without checking conditions"
+                ],
+                answer: 0,
+                explanation: "Expressions should be simplified using valid mathematical rules."
+            }
+        ]
+    };
 
-    ],
-
-
-    Chemistry: [
-
-      {
-        q: `The study of ${chapter} mainly involves:`,
-        o: [
-          "Chemical principles and relationships",
-          "Planetary motion only",
-          "Computer programming only",
-          "Mechanical machines only"
-        ],
-        a: 0,
-        e: `${chapter} is a chemistry topic involving chemical principles and relationships.`
-      },
-
-      {
-        q: `While solving a numerical problem from ${chapter}, it is important to:`,
-        o: [
-          "Check units and given quantities",
-          "Ignore all units",
-          "Guess the result",
-          "Change the given values"
-        ],
-        a: 0,
-        e: "Correct units and given quantities are important for obtaining a meaningful chemical result."
-      },
-
-      {
-        q: `A good first step in a ${chapter} problem is to:`,
-        o: [
-          "Identify the given information",
-          "Guess immediately",
-          "Ignore the conditions",
-          "Change the data randomly"
-        ],
-        a: 0,
-        e: "Identifying the given information helps select the correct chemical relationship."
-      }
-
-    ],
-
-
-    Mathematics: [
-
-      {
-        q: `A useful first step when solving a problem from ${chapter} is to:`,
-        o: [
-          "Identify the given information",
-          "Guess immediately",
-          "Ignore the conditions",
-          "Change the variables randomly"
-        ],
-        a: 0,
-        e: "Understanding the given information is an important first step in mathematical problem solving."
-      },
-
-      {
-        q: `A mathematical result should be checked by:`,
-        o: [
-          "Substitution or logical verification",
-          "Ignoring the conditions",
-          "Changing the answer",
-          "Removing all variables"
-        ],
-        a: 0,
-        e: "Substitution and logical verification help check mathematical results."
-      },
-
-      {
-        q: `${chapter} problems commonly require careful attention to:`,
-        o: [
-          "Definitions and conditions",
-          "Only handwriting",
-          "Only colours",
-          "Random guessing"
-        ],
-        a: 0,
-        e: "Definitions and conditions are important when solving mathematics problems."
-      }
-
-    ]
-
-  };
-
-
-  const list = templates[subject];
-
-
-  for (let i = 0; i < count; i++) {
-
-    const template = list[i % list.length];
-
-    const difficulty =
-      i < 10
-        ? "Easy"
-        : i < 20
-          ? "Medium"
-          : "Hard";
-
+    const template =
+        templates[subject][number % templates[subject].length];
 
     addQuestion(
-      subject,
-      chapter,
-      difficulty,
-      template.q,
-      template.o,
-      template.a,
-      template.e
-    );
-
-  }
-
-}
-
-
-// ============================================================
-// ENSURE EXACTLY 30 QUESTIONS PER CHAPTER
-// ============================================================
-
-for (const subject of Object.keys(chapterCatalog)) {
-
-  for (const chapter of chapterCatalog[subject]) {
-
-    const currentCount = questions.filter(
-      q =>
-        q.subject === subject &&
-        q.chapter === chapter
-    ).length;
-
-
-    if (currentCount < 30) {
-
-      createExtraQuestions(
         subject,
         chapter,
-        30 - currentCount
-      );
-
-    }
-
-  }
-
-}
-
-
-// ============================================================
-// NORMALIZE QUESTION DIFFICULTY
-// ============================================================
-// Guarantees every chapter has:
-// Easy: 10
-// Medium: 10
-// Hard: 10
-// ============================================================
-
-for (const subject of Object.keys(chapterCatalog)) {
-
-  for (const chapter of chapterCatalog[subject]) {
-
-    const chapterQuestions = questions.filter(
-      q =>
-        q.subject === subject &&
-        q.chapter === chapter
+        difficulty,
+        `${template.q} (Practice Question ${number + 1})`,
+        template.options,
+        template.answer,
+        template.explanation
     );
-
-
-    chapterQuestions.forEach((q, index) => {
-
-      if (index < 10) {
-
-        q.difficulty = "Easy";
-
-      } else if (index < 20) {
-
-        q.difficulty = "Medium";
-
-      } else {
-
-        q.difficulty = "Hard";
-
-      }
-
-    });
-
-  }
-
 }
 
 
-// ============================================================
-// MOCK TESTS
-// ============================================================
+/* -----------------------------
+   FILL EVERY CHAPTER TO 30
+----------------------------- */
+
+Object.keys(chapterCatalog).forEach(subject => {
+
+    chapterCatalog[subject].forEach(chapter => {
+
+        const chapterQuestions = questions.filter(
+            q =>
+                q.subject === subject &&
+                q.chapter === chapter
+        );
+
+        for (
+            let i = chapterQuestions.length;
+            i < 30;
+            i++
+        ) {
+
+            let difficulty;
+
+            if (i < 10) {
+                difficulty = "Easy";
+            } else if (i < 20) {
+                difficulty = "Medium";
+            } else {
+                difficulty = "Hard";
+            }
+
+            generateQuestion(
+                subject,
+                chapter,
+                difficulty,
+                i
+            );
+        }
+    });
+});
+
+
+/* =========================================================
+   MOCK TESTS
+========================================================= */
 
 const mockTests = [];
 
-
 for (let i = 1; i <= 50; i++) {
 
-  mockTests.push({
+    mockTests.push({
+        id: `MOCK-${String(i).padStart(2, "0")}`,
+        title: `MHT-CET Full Mock Test ${i}`,
+        type: "mock",
+        durationMinutes: 180,
+        questionCount: 150,
 
-    id: `MOCK-${String(i).padStart(2, "0")}`,
+        pattern: {
+            Physics: {
+                questions: 50,
+                marksPerQuestion: 1,
+                totalMarks: 50
+            },
 
-    title: `MHT-CET 2027 Mock Test ${i}`,
+            Chemistry: {
+                questions: 50,
+                marksPerQuestion: 1,
+                totalMarks: 50
+            },
 
-    type: "mock",
+            Mathematics: {
+                questions: 50,
+                marksPerQuestion: 2,
+                totalMarks: 100
+            }
+        },
 
-    durationMinutes: 180,
+        phases: {
+            phase1: {
+                subjects: ["Physics", "Chemistry"],
+                durationMinutes: 90
+            },
 
-    questionCount: 150,
+            phase2: {
+                subjects: ["Mathematics"],
+                durationMinutes: 90
+            }
+        },
 
-    pattern: {
-
-      physics: 50,
-
-      chemistry: 50,
-
-      mathematics: 50
-
-    },
-
-    marks: {
-
-      physics: 50,
-
-      chemistry: 50,
-
-      mathematics: 100,
-
-      total: 200
-
-    },
-
-    phases: [
-
-      {
-        name: "Physics + Chemistry",
-        durationMinutes: 90,
-        physicsQuestions: 50,
-        chemistryQuestions: 50
-      },
-
-      {
-        name: "Mathematics",
-        durationMinutes: 90,
-        mathematicsQuestions: 50
-      }
-
-    ],
-
-    negativeMarking: false,
-
-    questions: []
-
-  });
-
+        negativeMarking: false
+    });
 }
 
 
-// ============================================================
-// PYQ TEST SLOTS
-// ============================================================
-// These are placeholders until verified actual PYQs are added.
-// They are deliberately NOT labelled as containing verified
-// questions.
-// ============================================================
+/* =========================================================
+   PYQ TESTS
+========================================================= */
 
 const pyqTests = [
+    {
+        id: "PYQ-2022",
+        title: "MHT-CET 2022 PYQ",
+        year: 2022,
+        durationMinutes: 180,
+        questionCount: 150,
+        verified: false
+    },
 
-  {
-    id: "PYQ-2022",
-    year: 2022,
-    title: "MHT-CET 2022 PYQ Practice",
-    type: "pyq",
-    durationMinutes: 180,
-    questionCount: 150,
-    verified: false,
-    questions: []
-  },
+    {
+        id: "PYQ-2023",
+        title: "MHT-CET 2023 PYQ",
+        year: 2023,
+        durationMinutes: 180,
+        questionCount: 150,
+        verified: false
+    },
 
-  {
-    id: "PYQ-2023",
-    year: 2023,
-    title: "MHT-CET 2023 PYQ Practice",
-    type: "pyq",
-    durationMinutes: 180,
-    questionCount: 150,
-    verified: false,
-    questions: []
-  },
+    {
+        id: "PYQ-2024",
+        title: "MHT-CET 2024 PYQ",
+        year: 2024,
+        durationMinutes: 180,
+        questionCount: 150,
+        verified: false
+    },
 
-  {
-    id: "PYQ-2024",
-    year: 2024,
-    title: "MHT-CET 2024 PYQ Practice",
-    type: "pyq",
-    durationMinutes: 180,
-    questionCount: 150,
-    verified: false,
-    questions: []
-  },
+    {
+        id: "PYQ-2025",
+        title: "MHT-CET 2025 PYQ",
+        year: 2025,
+        durationMinutes: 180,
+        questionCount: 150,
+        verified: false
+    },
 
-  {
-    id: "PYQ-2025",
-    year: 2025,
-    title: "MHT-CET 2025 PYQ Practice",
-    type: "pyq",
-    durationMinutes: 180,
-    questionCount: 150,
-    verified: false,
-    questions: []
-  },
-
-  {
-    id: "PYQ-2026",
-    year: 2026,
-    title: "MHT-CET 2026 PYQ Practice",
-    type: "pyq",
-    durationMinutes: 180,
-    questionCount: 150,
-    verified: false,
-    questions: []
-  }
-
+    {
+        id: "PYQ-2026",
+        title: "MHT-CET 2026 PYQ",
+        year: 2026,
+        durationMinutes: 180,
+        questionCount: 150,
+        verified: false
+    }
 ];
 
 
-// ============================================================
-// QUESTION BANK INFORMATION
-// ============================================================
+/* =========================================================
+   QUESTION BANK INFORMATION
+========================================================= */
 
 const questionBankInfo = {
 
-  totalQuestions: questions.length,
+    totalSubjects: 3,
 
-  questionsPerChapter: 30,
+    totalChapters:
+        chapterCatalog.Physics.length +
+        chapterCatalog.Chemistry.length +
+        chapterCatalog.Mathematics.length,
 
-  easyPerChapter: 10,
+    totalQuestions: questions.length,
 
-  mediumPerChapter: 10,
+    questionsPerChapter: 30,
 
-  hardPerChapter: 10,
+    difficultyDistribution: {
+        Easy: 10,
+        Medium: 10,
+        Hard: 10
+    },
 
-  totalChapters: 56,
+    mockTests: 50,
 
-  totalMockTests: 50,
-
-  totalPYQYears: 5,
-
-  mockQuestions: 150,
-
-  mockDurationMinutes: 180,
-
-  totalMarks: 200,
-
-  negativeMarking: false,
-
-  physicsQuestions: 50,
-
-  chemistryQuestions: 50,
-
-  mathematicsQuestions: 50,
-
-  physicsMarks: 50,
-
-  chemistryMarks: 50,
-
-  mathematicsMarks: 100
-
+    pyqYears: [
+        2022,
+        2023,
+        2024,
+        2025,
+        2026
+    ]
 };
 
 
-// ============================================================
-// HELPER FUNCTIONS FOR APP.JS
-// ============================================================
+/* =========================================================
+   HELPER FUNCTIONS
+========================================================= */
 
 function getQuestionsByChapter(subject, chapter) {
 
-  return questions.filter(
-    q =>
-      q.subject === subject &&
-      q.chapter === chapter
-  );
-
+    return questions.filter(
+        q =>
+            q.subject === subject &&
+            q.chapter === chapter
+    );
 }
 
 
 function getQuestionsBySubject(subject) {
 
-  return questions.filter(
-    q => q.subject === subject
-  );
-
+    return questions.filter(
+        q => q.subject === subject
+    );
 }
 
 
 function getQuestionsByDifficulty(
-  subject,
-  chapter,
-  difficulty
+    subject,
+    chapter,
+    difficulty
 ) {
 
-  return questions.filter(
-    q =>
-      q.subject === subject &&
-      q.chapter === chapter &&
-      q.difficulty === difficulty
-  );
-
+    return questions.filter(
+        q =>
+            q.subject === subject &&
+            q.chapter === chapter &&
+            q.difficulty === difficulty
+    );
 }
 
 
-// ============================================================
-// MOCK QUESTION GENERATOR
-// ============================================================
-// Creates:
-// Physics = 50
-// Chemistry = 50
-// Mathematics = 50
-// Total = 150
-// ============================================================
+function getRandomQuestions(subject, count) {
+
+    const pool = getQuestionsBySubject(subject);
+
+    const shuffled = [...pool].sort(
+        () => Math.random() - 0.5
+    );
+
+    return shuffled.slice(0, count);
+}
+
 
 function getMockQuestions() {
 
-  const physics = getQuestionsBySubject("Physics");
+    return {
 
-  const chemistry = getQuestionsBySubject("Chemistry");
+        Physics: getRandomQuestions("Physics", 50),
 
-  const mathematics = getQuestionsBySubject("Mathematics");
+        Chemistry: getRandomQuestions("Chemistry", 50),
 
-
-  function shuffle(array) {
-
-    const copy = [...array];
-
-    for (let i = copy.length - 1; i > 0; i--) {
-
-      const j = Math.floor(Math.random() * (i + 1));
-
-      [copy[i], copy[j]] =
-        [copy[j], copy[i]];
-
-    }
-
-    return copy;
-
-  }
-
-
-  return {
-
-    physics: shuffle(physics).slice(0, 50),
-
-    chemistry: shuffle(chemistry).slice(0, 50),
-
-    mathematics: shuffle(mathematics).slice(0, 50)
-
-  };
-
+        Mathematics: getRandomQuestions("Mathematics", 50)
+    };
 }
 
 
-// ============================================================
-// GLOBAL ACCESS
-// ============================================================
-// app.js can safely access these through window.
-// ============================================================
+/* =========================================================
+   GLOBAL EXPORTS
+========================================================= */
 
 window.questions = questions;
 
@@ -1217,37 +1542,23 @@ window.pyqTests = pyqTests;
 
 window.questionBankInfo = questionBankInfo;
 
-window.getQuestionsByChapter = getQuestionsByChapter;
+window.getQuestionsByChapter =
+    getQuestionsByChapter;
 
-window.getQuestionsBySubject = getQuestionsBySubject;
+window.getQuestionsBySubject =
+    getQuestionsBySubject;
 
-window.getQuestionsByDifficulty = getQuestionsByDifficulty;
+window.getQuestionsByDifficulty =
+    getQuestionsByDifficulty;
 
-window.getMockQuestions = getMockQuestions;
+window.getRandomQuestions =
+    getRandomQuestions;
 
+window.getMockQuestions =
+    getMockQuestions;
 
-// ============================================================
-// LOAD CONFIRMATION
-// ============================================================
-
-console.log("==========================================");
-
-console.log("MHT-CET QUESTION DATABASE LOADED");
-
-console.log("Total Questions:", questions.length);
-
-console.log("Total Chapters:", questionBankInfo.totalChapters);
-
-console.log("Questions Per Chapter:", questionBankInfo.questionsPerChapter);
-
-console.log("Easy Per Chapter:", questionBankInfo.easyPerChapter);
-
-console.log("Medium Per Chapter:", questionBankInfo.mediumPerChapter);
-
-console.log("Hard Per Chapter:", questionBankInfo.hardPerChapter);
-
-console.log("Mock Tests:", mockTests.length);
-
-console.log("PYQ Years:", pyqTests.length);
-
-console.log("==========================================");
+console.log(
+    "MHT-CET Question Bank Loaded:",
+    questions.length,
+    "questions"
+);
