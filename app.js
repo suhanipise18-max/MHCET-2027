@@ -1,436 +1,747 @@
-// ======================================================
-// MHT-CET 2027 PRACTICE PORTAL
-// Exam-style PCM Mock Test Engine
-// ======================================================
+/* =========================================================
+   MHT-CET 2027 PRACTICE PORTAL - APP.JS
+   ========================================================= */
+
+/* =========================
+   DATA
+========================= */
+
+const questionBank = window.questions || [];
+const chapterCatalog = window.chapterCatalog || {};
+const mockTests = window.mockTests || [];
+const pyqTests = window.pyqTests || [];
 
 let currentTest = null;
+
+let selectedSubject = "";
+let selectedChapter = "";
+let selectedDifficulty = "";
+
+let practiceQuestions = [];
+let practiceIndex = 0;
+
+let timerInterval = null;
+let remainingSeconds = 0;
+
 let currentSection = "physics";
-let currentPhase = "pc"; // pc = Physics + Chemistry, math = Mathematics
 let currentQuestionIndex = {
     physics: 0,
     chemistry: 0,
     mathematics: 0
 };
 
-let timerInterval = null;
-let remainingSeconds = 90 * 60;
+let currentPhase = "pc";
 
-// ------------------------------------------------------
-// BASIC HELPERS
-// ------------------------------------------------------
+
+/* =========================================================
+   UTILITY FUNCTIONS
+   ========================================================= */
 
 function shuffle(array) {
-    return [...array].sort(() => Math.random() - 0.5);
+    const arr = [...array];
+
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+
+    return arr;
 }
 
-function getQuestionsBySubject(subject) {
-    return questionBank.filter(q => q.subject === subject);
+
+function formatTime(seconds) {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    return (
+        String(hrs).padStart(2, "0") +
+        ":" +
+        String(mins).padStart(2, "0") +
+        ":" +
+        String(secs).padStart(2, "0")
+    );
 }
 
-function getMixedQuestions(subject, count) {
-    const all = getQuestionsBySubject(subject);
 
-    const easy = shuffle(all.filter(q => q.difficulty === "Easy"));
-    const medium = shuffle(all.filter(q => q.difficulty === "Medium"));
-    const hard = shuffle(all.filter(q => q.difficulty === "Hard"));
-
-    const selected = [
-        ...easy.slice(0, Math.ceil(count / 3)),
-        ...medium.slice(0, Math.ceil(count / 3)),
-        ...hard.slice(0, Math.floor(count / 3))
-    ];
-
-    return shuffle(selected).slice(0, count);
+function hideAllPages() {
+    document.querySelectorAll(".page").forEach(page => {
+        page.style.display = "none";
+    });
 }
 
-// ------------------------------------------------------
-// DASHBOARD
-// ------------------------------------------------------
 
-function showDashboard() {
-    stopTimer();
+function showPage(id) {
+    hideAllPages();
 
-    const app = document.getElementById("app");
+    const page = document.getElementById(id);
 
-    app.innerHTML = `
-        <div class="dashboard">
-            <h1>MHT-CET 2027 Practice Portal</h1>
+    if (page) {
+        page.style.display = "block";
+    }
 
-            <div class="dashboard-grid">
-
-                <button onclick="showSubjects()">
-                    📚 Chapter Practice
-                </button>
-
-                <button onclick="showMockTests()">
-                    📝 Full Mock Tests
-                </button>
-
-                <button onclick="showPYQTests()">
-                    📄 PYQ Tests
-                </button>
-
-                <button onclick="showPerformance()">
-                    📊 Performance
-                </button>
-
-            </div>
-        </div>
-    `;
+    window.scrollTo(0, 0);
 }
 
-// ------------------------------------------------------
-// SUBJECTS
-// ------------------------------------------------------
 
-function showSubjects() {
-    stopTimer();
+/* =========================================================
+   LOCAL STORAGE / PERFORMANCE
+========================= */
 
-    const app = document.getElementById("app");
-
-    app.innerHTML = `
-        <div class="page">
-
-            <button onclick="showDashboard()">← Back</button>
-
-            <h1>Chapter Practice</h1>
-
-            <div class="subject-buttons">
-                <button onclick="showChapters('Physics')">
-                    Physics
-                </button>
-
-                <button onclick="showChapters('Chemistry')">
-                    Chemistry
-                </button>
-
-                <button onclick="showChapters('Mathematics')">
-                    Mathematics
-                </button>
-            </div>
-
-        </div>
-    `;
+function getStats() {
+    return JSON.parse(
+        localStorage.getItem("mhtCETStats") ||
+        JSON.stringify({
+            questions: 0,
+            correct: 0,
+            wrong: 0,
+            tests: 0,
+            mockTests: [],
+            subject: {
+                Physics: { questions: 0, correct: 0 },
+                Chemistry: { questions: 0, correct: 0 },
+                Mathematics: { questions: 0, correct: 0 }
+            }
+        })
+    );
 }
 
-// ------------------------------------------------------
-// CHAPTERS
-// ------------------------------------------------------
 
-function showChapters(subject) {
-    const app = document.getElementById("app");
+function saveStats(stats) {
+    localStorage.setItem("mhtCETStats", JSON.stringify(stats));
+}
 
-    const chapters = chapterCatalog.filter(
-        c => c.subject === subject
+
+function updateStats(correct, wrong, answered, subjectResults = null) {
+    const stats = getStats();
+
+    stats.questions += answered;
+    stats.correct += correct;
+    stats.wrong += wrong;
+
+    if (subjectResults) {
+        Object.keys(subjectResults).forEach(subject => {
+
+            if (!stats.subject[subject]) {
+                stats.subject[subject] = {
+                    questions: 0,
+                    correct: 0
+                };
+            }
+
+            stats.subject[subject].questions +=
+                subjectResults[subject].answered;
+
+            stats.subject[subject].correct +=
+                subjectResults[subject].correct;
+        });
+    }
+
+    saveStats(stats);
+
+    updateDashboardStats();
+}
+
+
+function updateTestCount() {
+    const stats = getStats();
+
+    stats.tests += 1;
+
+    saveStats(stats);
+}
+
+
+function updateDashboardStats() {
+    const stats = getStats();
+
+    const attempted = document.getElementById("questionsAttempted");
+    const tests = document.getElementById("testsCompleted");
+    const accuracy = document.getElementById("accuracy");
+
+    if (attempted) {
+        attempted.textContent = stats.questions;
+    }
+
+    if (tests) {
+        tests.textContent = stats.tests;
+    }
+
+    if (accuracy) {
+        const acc =
+            stats.questions > 0
+                ? Math.round((stats.correct / stats.questions) * 100)
+                : 0;
+
+        accuracy.textContent = acc + "%";
+    }
+
+    updateStreakDisplay();
+}
+
+
+function updateStreakDisplay() {
+    const streak = Number(
+        localStorage.getItem("mhtCETStreak") || 0
     );
 
-    app.innerHTML = `
-        <div class="page">
+    const element = document.getElementById("studyStreak");
 
-            <button onclick="showSubjects()">← Back</button>
-
-            <h1>${subject}</h1>
-
-            <div class="chapter-grid">
-
-                ${chapters.map(chapter => `
-                    <button
-                        onclick="startChapterPractice('${subject}', '${chapter.name.replace(/'/g, "\\'")}')"
-                    >
-                        ${chapter.name}
-                        <small>30 Questions</small>
-                    </button>
-                `).join("")}
-
-            </div>
-
-        </div>
-    `;
+    if (element) {
+        element.textContent = streak;
+    }
 }
 
-// ------------------------------------------------------
-// CHAPTER PRACTICE
-// ------------------------------------------------------
 
-function startChapterPractice(subject, chapter) {
+function recordStudyActivity() {
+    const today = new Date().toISOString().split("T")[0];
 
-    const questions = questionBank.filter(
-        q =>
-            q.subject === subject &&
-            q.chapter === chapter
+    const lastDate =
+        localStorage.getItem("mhtCETLastStudyDate");
+
+    let streak = Number(
+        localStorage.getItem("mhtCETStreak") || 0
     );
 
-    if (!questions.length) {
-        alert("No questions available for this chapter yet.");
+    if (lastDate === today) {
         return;
     }
 
-    let index = 0;
-    let answers = {};
+    if (lastDate) {
+        const oldDate = new Date(lastDate);
+        const currentDate = new Date(today);
 
-    function render() {
+        const difference =
+            Math.round(
+                (currentDate - oldDate) /
+                (1000 * 60 * 60 * 24)
+            );
 
-        const q = questions[index];
+        if (difference === 1) {
+            streak++;
+        } else {
+            streak = 1;
+        }
+    } else {
+        streak = 1;
+    }
 
-        document.getElementById("app").innerHTML = `
-            <div class="practice-page">
+    localStorage.setItem("mhtCETStreak", streak);
+    localStorage.setItem("mhtCETLastStudyDate", today);
 
-                <div class="top-bar">
-                    <button onclick="showChapters('${subject}')">
-                        ← Back
-                    </button>
+    updateStreakDisplay();
+}
 
-                    <span>
-                        ${index + 1} / ${questions.length}
-                    </span>
-                </div>
 
-                <h2>${chapter}</h2>
+/* =========================================================
+   HOME
+========================= */
 
-                <div class="question-card">
+function goHome() {
+    stopTimer();
 
-                    <p class="question-number">
-                        Question ${index + 1}
-                    </p>
+    showPage("home");
 
-                    <h3>${q.question}</h3>
+    updateDashboardStats();
+}
 
-                    <div class="options">
 
-                        ${q.options.map((option, i) => `
-                            <button
-                                class="${answers[q.id] === i ? "selected" : ""}"
-                                onclick="selectPracticeAnswer(${i})"
-                            >
-                                ${String.fromCharCode(65 + i)}.
-                                ${option}
-                            </button>
-                        `).join("")}
+function showDashboard() {
+    goHome();
+}
 
-                    </div>
 
-                    <div class="navigation">
+/* =========================================================
+   PRACTICE
+========================= */
 
-                        <button
-                            onclick="previousPractice()"
-                            ${index === 0 ? "disabled" : ""}
-                        >
-                            Previous
-                        </button>
+function showPractice() {
+    showPage("practice");
 
-                        <button onclick="nextPractice()">
-                            ${index === questions.length - 1
-                                ? "Finish"
-                                : "Next"}
-                        </button>
+    document.getElementById("subjectSelection").style.display = "block";
+    document.getElementById("chapterSection").style.display = "none";
+    document.getElementById("difficultySection").style.display = "none";
+    document.getElementById("practiceQuestion").style.display = "none";
+}
 
-                    </div>
 
-                </div>
-            </div>
+function selectSubject(subject) {
+
+    selectedSubject = subject;
+
+    document.getElementById("selectedSubject").textContent =
+        subject;
+
+    document.getElementById("subjectSelection").style.display =
+        "none";
+
+    document.getElementById("chapterSection").style.display =
+        "block";
+
+    document.getElementById("difficultySection").style.display =
+        "none";
+
+    document.getElementById("practiceQuestion").style.display =
+        "none";
+
+    renderChapters(subject);
+}
+
+
+function renderChapters(subject) {
+
+    const container =
+        document.getElementById("chapterList");
+
+    container.innerHTML = "";
+
+    const chapters = chapterCatalog[subject] || [];
+
+    if (chapters.length === 0) {
+
+        container.innerHTML =
+            "<p>No chapters available.</p>";
+
+        return;
+    }
+
+    chapters.forEach((chapter, index) => {
+
+        const button = document.createElement("button");
+
+        button.className = "chapter-card";
+
+        button.innerHTML = `
+            <span>Chapter ${index + 1}</span>
+            <strong>${chapter}</strong>
+            <small>30 Questions</small>
         `;
 
-        window.selectPracticeAnswer = function(i) {
-            answers[q.id] = i;
-            render();
+        button.onclick = function () {
+            selectChapter(chapter);
         };
 
-        window.previousPractice = function() {
-            if (index > 0) {
-                index--;
-                render();
-            }
-        };
+        container.appendChild(button);
+    });
+}
 
-        window.nextPractice = function() {
 
-            if (index < questions.length - 1) {
-                index++;
-                render();
+function backToSubjects() {
+
+    document.getElementById("subjectSelection").style.display =
+        "block";
+
+    document.getElementById("chapterSection").style.display =
+        "none";
+
+    document.getElementById("difficultySection").style.display =
+        "none";
+
+    document.getElementById("practiceQuestion").style.display =
+        "none";
+}
+
+
+function selectChapter(chapter) {
+
+    selectedChapter = chapter;
+
+    document.getElementById("selectedChapter").textContent =
+        chapter;
+
+    document.getElementById("chapterSection").style.display =
+        "none";
+
+    document.getElementById("difficultySection").style.display =
+        "block";
+
+    document.getElementById("practiceQuestion").style.display =
+        "none";
+}
+
+
+function backToChapters() {
+
+    document.getElementById("difficultySection").style.display =
+        "none";
+
+    document.getElementById("chapterSection").style.display =
+        "block";
+
+    renderChapters(selectedSubject);
+}
+
+
+function backToDifficulty() {
+
+    document.getElementById("practiceQuestion").style.display =
+        "none";
+
+    document.getElementById("difficultySection").style.display =
+        "block";
+}
+
+
+function startChapterPractice(difficulty) {
+
+    selectedDifficulty = difficulty;
+
+    practiceQuestions = questionBank.filter(q =>
+        q.subject === selectedSubject &&
+        q.chapter === selectedChapter &&
+        q.difficulty === difficulty
+    );
+
+    practiceQuestions = shuffle(practiceQuestions);
+
+    if (practiceQuestions.length === 0) {
+
+        alert(
+            "No questions are available for this chapter and difficulty."
+        );
+
+        return;
+    }
+
+    practiceIndex = 0;
+
+    document.getElementById("difficultySection").style.display =
+        "none";
+
+    document.getElementById("practiceQuestion").style.display =
+        "block";
+
+    recordStudyActivity();
+
+    renderPracticeQuestion();
+}
+
+
+function renderPracticeQuestion() {
+
+    const question =
+        practiceQuestions[practiceIndex];
+
+    if (!question) {
+        return;
+    }
+
+    document.getElementById("practiceQuestionNumber").textContent =
+        `Question ${practiceIndex + 1} of ${practiceQuestions.length}`;
+
+    document.getElementById("practiceChapter").textContent =
+        question.chapter;
+
+    document.getElementById("practiceDifficulty").textContent =
+        question.difficulty;
+
+    document.getElementById("practiceQuestionText").textContent =
+        question.question;
+
+    const optionsContainer =
+        document.getElementById("practiceOptions");
+
+    optionsContainer.innerHTML = "";
+
+    const feedback =
+        document.getElementById("practiceFeedback");
+
+    feedback.innerHTML = "";
+
+    question.options.forEach((option, index) => {
+
+        const button = document.createElement("button");
+
+        button.className = "option-btn";
+
+        button.textContent =
+            String.fromCharCode(65 + index) +
+            ". " +
+            option;
+
+        button.onclick = function () {
+
+            const correct =
+                index === question.answer;
+
+            document
+                .querySelectorAll("#practiceOptions .option-btn")
+                .forEach(btn => {
+                    btn.disabled = true;
+                });
+
+            if (correct) {
+
+                button.classList.add("correct");
+
+                feedback.innerHTML = `
+                    <div class="correct-feedback">
+                        ✓ Correct Answer
+                        <p>${question.explanation || ""}</p>
+                    </div>
+                `;
+
             } else {
-                showPracticeResult(
-                    questions,
-                    answers,
-                    subject,
-                    chapter
-                );
+
+                button.classList.add("wrong");
+
+                const correctButton =
+                    document.querySelectorAll(
+                        "#practiceOptions .option-btn"
+                    )[question.answer];
+
+                if (correctButton) {
+                    correctButton.classList.add("correct");
+                }
+
+                feedback.innerHTML = `
+                    <div class="wrong-feedback">
+                        ✗ Wrong Answer
+                        <p>
+                            Correct answer:
+                            ${String.fromCharCode(65 + question.answer)}
+                            <br>
+                            ${question.explanation || ""}
+                        </p>
+                    </div>
+                `;
             }
+
+            savePracticeAttempt(correct);
+        };
+
+        optionsContainer.appendChild(button);
+    });
+}
+
+
+function savePracticeAttempt(correct) {
+
+    const key = "mhtCETPracticeAttempts";
+
+    const attempts = JSON.parse(
+        localStorage.getItem(key) || "[]"
+    );
+
+    const question =
+        practiceQuestions[practiceIndex];
+
+    attempts.push({
+        questionId: question.id,
+        subject: question.subject,
+        chapter: question.chapter,
+        correct: correct,
+        date: new Date().toISOString()
+    });
+
+    localStorage.setItem(
+        key,
+        JSON.stringify(attempts)
+    );
+
+    const stats = getStats();
+
+    stats.questions++;
+
+    if (correct) {
+        stats.correct++;
+    } else {
+        stats.wrong++;
+    }
+
+    if (!stats.subject[question.subject]) {
+        stats.subject[question.subject] = {
+            questions: 0,
+            correct: 0
         };
     }
 
-    render();
+    stats.subject[question.subject].questions++;
+
+    if (correct) {
+        stats.subject[question.subject].correct++;
+    }
+
+    saveStats(stats);
+
+    updateDashboardStats();
 }
 
-// ------------------------------------------------------
-// PRACTICE RESULT
-// ------------------------------------------------------
 
-function showPracticeResult(
-    questions,
-    answers,
-    subject,
-    chapter
-) {
+function nextPracticeQuestion() {
 
-    let correct = 0;
-    let wrong = 0;
-    let unanswered = 0;
+    if (
+        practiceIndex <
+        practiceQuestions.length - 1
+    ) {
+        practiceIndex++;
 
-    questions.forEach(q => {
+        renderPracticeQuestion();
 
-        if (answers[q.id] === undefined) {
-            unanswered++;
-        } else if (
-            answers[q.id] === q.answer
-        ) {
-            correct++;
-        } else {
-            wrong++;
-        }
+    } else {
 
-    });
+        alert("You have completed this practice set!");
 
-    document.getElementById("app").innerHTML = `
-
-        <div class="result-page">
-
-            <h1>Practice Complete 🎉</h1>
-
-            <h2>${chapter}</h2>
-
-            <div class="result-card">
-
-                <p>Correct: <strong>${correct}</strong></p>
-                <p>Wrong: <strong>${wrong}</strong></p>
-                <p>Unanswered: <strong>${unanswered}</strong></p>
-
-                <h2>
-                    Score: ${correct} / ${questions.length}
-                </h2>
-
-            </div>
-
-            <button onclick="showChapters('${subject}')">
-                Practice Again
-            </button>
-
-            <button onclick="showDashboard()">
-                Dashboard
-            </button>
-
-        </div>
-    `;
+        backToDifficulty();
+    }
 }
 
-// ======================================================
-// MOCK TEST LIST
-// ======================================================
+
+function previousPracticeQuestion() {
+
+    if (practiceIndex > 0) {
+
+        practiceIndex--;
+
+        renderPracticeQuestion();
+
+    }
+}
+
+
+/* =========================================================
+   MOCK TESTS
+========================= */
 
 function showMockTests() {
 
-    stopTimer();
+    showPage("mockTests");
 
-    const app = document.getElementById("app");
+    const list =
+        document.getElementById("mockTestList");
 
-    app.innerHTML = `
+    list.innerHTML = "";
 
-        <div class="page">
+    if (mockTests.length === 0) {
 
-            <button onclick="showDashboard()">← Back</button>
+        for (let i = 1; i <= 50; i++) {
+            createMockCard(
+                {
+                    id: `MOCK-${String(i).padStart(2, "0")}`,
+                    title: `MHT-CET Mock Test ${i}`,
+                    durationMinutes: 180,
+                    questionCount: 150
+                },
+                list
+            );
+        }
 
-            <h1>MHT-CET Full Mock Tests</h1>
+        return;
+    }
 
-            <div class="mock-info">
-
-                <p><strong>150 Questions</strong></p>
-                <p><strong>200 Marks</strong></p>
-                <p><strong>180 Minutes</strong></p>
-                <p>No Negative Marking</p>
-
-            </div>
-
-            <div class="mock-grid">
-
-                ${mockTests.map(test => `
-
-                    <div class="mock-card">
-
-                        <h3>${test.title}</h3>
-
-                        <p>150 Questions</p>
-                        <p>200 Marks</p>
-                        <p>180 Minutes</p>
-
-                        <button onclick="startCETMock(${test.id})">
-                            Start Mock Test
-                        </button>
-
-                    </div>
-
-                `).join("")}
-
-            </div>
-
-        </div>
-    `;
+    mockTests.forEach(test => {
+        createMockCard(test, list);
+    });
 }
 
-// ======================================================
-// START CET MOCK
-// ======================================================
+
+function createMockCard(test, container) {
+
+    const card = document.createElement("div");
+
+    card.className = "test-card";
+
+    card.innerHTML = `
+        <div>
+            <h3>${test.title}</h3>
+
+            <p>
+                150 Questions • 180 Minutes
+            </p>
+
+            <small>
+                Physics 50 • Chemistry 50 • Mathematics 50
+            </small>
+        </div>
+
+        <button>
+            Start Test
+        </button>
+    `;
+
+    card.querySelector("button").onclick = function () {
+        startCETMock(test.id);
+    };
+
+    container.appendChild(card);
+}
+
+
+function getQuestionsForSubject(subject, count) {
+
+    const available =
+        questionBank.filter(
+            q => q.subject === subject
+        );
+
+    return shuffle(available).slice(0, count);
+}
+
 
 function startCETMock(testId) {
 
-    stopTimer();
+    const physics =
+        getQuestionsForSubject("Physics", 50);
 
-    const physics = getMixedQuestions(
-        "Physics",
-        50
-    );
+    const chemistry =
+        getQuestionsForSubject("Chemistry", 50);
 
-    const chemistry = getMixedQuestions(
-        "Chemistry",
-        50
-    );
+    const mathematics =
+        getQuestionsForSubject("Mathematics", 50);
 
-    const mathematics = getMixedQuestions(
-        "Mathematics",
-        50
-    );
+    if (
+        physics.length < 50 ||
+        chemistry.length < 50 ||
+        mathematics.length < 50
+    ) {
+
+        alert(
+            "The question bank does not contain enough questions to create the full 150-question test."
+        );
+
+        return;
+    }
+
+    const testInfo =
+        mockTests.find(test => test.id === testId);
 
     currentTest = {
 
         id: testId,
 
-        phase: "pc",
+        title:
+            testInfo?.title ||
+            "MHT-CET Mock Test",
 
         sections: {
 
             physics: {
+                subject: "Physics",
                 questions: physics,
-                answers: {},
-                marked: {}
+                answers: Array(50).fill(null),
+                marked: Array(50).fill(false)
             },
 
             chemistry: {
+                subject: "Chemistry",
                 questions: chemistry,
-                answers: {},
-                marked: {}
+                answers: Array(50).fill(null),
+                marked: Array(50).fill(false)
             },
 
             mathematics: {
+                subject: "Mathematics",
                 questions: mathematics,
-                answers: {},
-                marked: {}
+                answers: Array(50).fill(null),
+                marked: Array(50).fill(false)
             }
-
         }
-
     };
 
-    currentPhase = "pc";
-
     currentSection = "physics";
+
+    currentPhase = "pc";
 
     currentQuestionIndex = {
         physics: 0,
@@ -440,16 +751,25 @@ function startCETMock(testId) {
 
     remainingSeconds = 90 * 60;
 
-    renderCETExam();
+    showPage("exam");
+
+    renderExam();
 
     startTimer();
+
+    recordStudyActivity();
 }
 
-// ======================================================
-// CET EXAM UI
-// ======================================================
 
-function renderCETExam() {
+/* =========================================================
+   EXAM SCREEN
+========================= */
+
+function renderExam() {
+
+    if (!currentTest) {
+        return;
+    }
 
     const section =
         currentTest.sections[currentSection];
@@ -460,362 +780,130 @@ function renderCETExam() {
     const question =
         section.questions[index];
 
-    const isPCPhase =
-        currentPhase === "pc";
+    document.getElementById("examTitle").textContent =
+        currentTest.title;
 
-    const marks =
-        currentSection === "mathematics"
-            ? 2
-            : 1;
+    document.getElementById("subjectName").textContent =
+        section.subject;
 
-    const app = document.getElementById("app");
+    document.getElementById("questionNumber").textContent =
+        `Question ${index + 1} of ${section.questions.length}`;
 
-    app.innerHTML = `
+    document.getElementById("questionText").textContent =
+        question.question;
 
-        <div class="cet-exam">
+    const answer =
+        section.answers[index];
 
-            <!-- HEADER -->
+    const status =
+        document.getElementById("questionStatus");
 
-            <div class="exam-header">
-
-                <div>
-                    <strong>MHT-CET 2027</strong>
-                </div>
-
-                <div>
-                    ${
-                        isPCPhase
-                            ? "PART 1 — PHYSICS + CHEMISTRY"
-                            : "PART 2 — MATHEMATICS"
-                    }
-                </div>
-
-                <div class="timer" id="timer">
-                    90:00
-                </div>
-
-            </div>
-
-
-            <!-- SECTION TABS -->
-
-            <div class="section-tabs">
-
-                <button
-                    class="${currentSection === "physics" ? "active" : ""}"
-                    onclick="switchSection('physics')"
-                    ${!isPCPhase ? "disabled" : ""}
-                >
-                    Physics
-                </button>
-
-                <button
-                    class="${currentSection === "chemistry" ? "active" : ""}"
-                    onclick="switchSection('chemistry')"
-                    ${!isPCPhase ? "disabled" : ""}
-                >
-                    Chemistry
-                </button>
-
-                <button
-                    class="${currentSection === "mathematics" ? "active" : ""}"
-                    onclick="switchSection('mathematics')"
-                    ${isPCPhase ? "disabled" : ""}
-                >
-                    Mathematics
-                </button>
-
-            </div>
-
-
-            <!-- EXAM BODY -->
-
-            <div class="exam-body">
-
-                <!-- QUESTION -->
-
-                <div class="question-area">
-
-                    <div class="question-top">
-
-                        <span>
-                            Question ${index + 1} of 50
-                        </span>
-
-                        <span>
-                            ${marks} Mark${marks > 1 ? "s" : ""}
-                        </span>
-
-                    </div>
-
-                    <div class="question-card">
-
-                        <h2>
-                            ${question.question}
-                        </h2>
-
-                        <div class="exam-options">
-
-                            ${question.options.map(
-                                (option, i) => `
-
-                                <button
-                                    class="${
-                                        section.answers[question.id] === i
-                                            ? "selected"
-                                            : ""
-                                    }"
-
-                                    onclick="selectCETAnswer(${i})"
-                                >
-
-                                    <span>
-                                        ${String.fromCharCode(65 + i)}
-                                    </span>
-
-                                    ${option}
-
-                                </button>
-
-                            `).join("")}
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- CONTROLS -->
-
-                    <div class="exam-controls">
-
-                        <button
-                            onclick="previousCETQuestion()"
-                            ${index === 0 ? "disabled" : ""}
-                        >
-                            Previous
-                        </button>
-
-                        <button onclick="markForReview()">
-                            ${section.marked[question.id]
-                                ? "Unmark Review"
-                                : "Mark for Review"}
-                        </button>
-
-                        <button onclick="clearCETResponse()">
-                            Clear Response
-                        </button>
-
-                        ${
-                            currentSection === "mathematics" &&
-                            index === 49
-                                ? `
-                                    <button
-                                        onclick="submitMockTest()"
-                                    >
-                                        Submit Test
-                                    </button>
-                                `
-                                : `
-                                    <button
-                                        onclick="nextCETQuestion()"
-                                    >
-                                        Save & Next
-                                    </button>
-                                `
-                        }
-
-                    </div>
-
-                </div>
-
-
-                <!-- QUESTION PALETTE -->
-
-                <div class="question-palette">
-
-                    <h3>Question Palette</h3>
-
-                    <div class="palette-info">
-
-                        <span>
-                            🟢 Answered
-                        </span>
-
-                        <span>
-                            ⚪ Not Answered
-                        </span>
-
-                        <span>
-                            🟡 Review
-                        </span>
-
-                    </div>
-
-                    <div class="palette-grid">
-
-                        ${section.questions.map(
-                            (q, i) => {
-
-                                let className = "";
-
-                                if (
-                                    section.marked[q.id]
-                                ) {
-                                    className += " review";
-                                }
-
-                                if (
-                                    section.answers[q.id] !== undefined
-                                ) {
-                                    className += " answered";
-                                }
-
-                                if (
-                                    i === index
-                                ) {
-                                    className += " current";
-                                }
-
-                                return `
-
-                                    <button
-                                        class="${className}"
-                                        onclick="goToCETQuestion(${i})"
-                                    >
-                                        ${i + 1}
-                                    </button>
-
-                                `;
-                            }
-                        ).join("")}
-
-                    </div>
-
-
-                    <div class="phase-info">
-
-                        ${
-                            isPCPhase
-                                ? `
-                                    <strong>Part 1</strong>
-
-                                    <p>
-                                        Physics + Chemistry
-                                    </p>
-
-                                    <p>
-                                        Shared Time: 90 Minutes
-                                    </p>
-
-                                    <p>
-                                        Mathematics is locked.
-                                    </p>
-                                `
-                                : `
-                                    <strong>Part 2</strong>
-
-                                    <p>
-                                        Mathematics
-                                    </p>
-
-                                    <p>
-                                        Time: 90 Minutes
-                                    </p>
-
-                                    <p>
-                                        Physics & Chemistry are locked.
-                                    </p>
-                                `
-                        }
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-    `;
-
-    updateTimerDisplay();
-}
-
-// ======================================================
-// SECTION SWITCH
-// ======================================================
-
-function switchSection(section) {
-
-    if (!currentTest) return;
-
-    if (
-        currentPhase === "pc" &&
-        (section === "physics" ||
-         section === "chemistry")
-    ) {
-
-        currentSection = section;
-
-        renderCETExam();
-
+    if (answer === null) {
+        status.textContent = "Not Answered";
+    } else {
+        status.textContent = "Answered";
     }
 
-    if (
-        currentPhase === "math" &&
-        section === "mathematics"
-    ) {
+    renderOptions(section, question, index);
 
-        currentSection = section;
-
-        renderCETExam();
-
-    }
+    renderQuestionPalette();
 }
 
-// ======================================================
-// ANSWER
-// ======================================================
 
-function selectCETAnswer(answerIndex) {
+function renderOptions(section, question, index) {
+
+    const container =
+        document.getElementById("options");
+
+    container.innerHTML = "";
+
+    question.options.forEach((option, optionIndex) => {
+
+        const button =
+            document.createElement("button");
+
+        button.className = "option-btn";
+
+        button.textContent =
+            String.fromCharCode(65 + optionIndex) +
+            ". " +
+            option;
+
+        if (
+            section.answers[index] ===
+            optionIndex
+        ) {
+            button.classList.add("selected");
+        }
+
+        button.onclick = function () {
+
+            section.answers[index] =
+                optionIndex;
+
+            renderExam();
+        };
+
+        container.appendChild(button);
+    });
+}
+
+
+function renderQuestionPalette() {
+
+    const container =
+        document.getElementById("questionNumbers");
+
+    container.innerHTML = "";
+
+    if (!currentTest) {
+        return;
+    }
 
     const section =
         currentTest.sections[currentSection];
 
-    const index =
-        currentQuestionIndex[currentSection];
+    section.questions.forEach((question, index) => {
 
-    const question =
-        section.questions[index];
+        const button =
+            document.createElement("button");
 
-    section.answers[question.id] =
-        answerIndex;
+        button.textContent = index + 1;
 
-    renderCETExam();
+        const answer =
+            section.answers[index];
+
+        if (answer !== null) {
+            button.classList.add("answered");
+        } else {
+            button.classList.add("unanswered");
+        }
+
+        if (section.marked[index]) {
+            button.classList.add("review");
+        }
+
+        if (
+            index ===
+            currentQuestionIndex[currentSection]
+        ) {
+            button.classList.add("active");
+        }
+
+        button.onclick = function () {
+
+            currentQuestionIndex[currentSection] =
+                index;
+
+            renderExam();
+        };
+
+        container.appendChild(button);
+    });
 }
 
-// ======================================================
-// NEXT QUESTION
-// ======================================================
 
-function nextCETQuestion() {
-
-    const index =
-        currentQuestionIndex[currentSection];
-
-    if (index < 49) {
-
-        currentQuestionIndex[currentSection]++;
-
-        renderCETExam();
-
-    }
-}
-
-// ======================================================
-// PREVIOUS QUESTION
-// ======================================================
-
-function previousCETQuestion() {
+function previousQuestion() {
 
     const index =
         currentQuestionIndex[currentSection];
@@ -824,26 +912,81 @@ function previousCETQuestion() {
 
         currentQuestionIndex[currentSection]--;
 
-        renderCETExam();
+        renderExam();
 
+    } else {
+
+        if (
+            currentSection === "chemistry"
+        ) {
+
+            currentSection = "physics";
+
+            currentQuestionIndex.physics = 49;
+
+            renderExam();
+
+        } else if (
+            currentSection === "mathematics"
+        ) {
+
+            currentSection = "chemistry";
+
+            currentQuestionIndex.chemistry = 49;
+
+            renderExam();
+        }
     }
 }
 
-// ======================================================
-// GO TO QUESTION
-// ======================================================
 
-function goToCETQuestion(index) {
+function nextQuestion() {
 
-    currentQuestionIndex[currentSection] =
-        index;
+    const index =
+        currentQuestionIndex[currentSection];
 
-    renderCETExam();
+    const section =
+        currentTest.sections[currentSection];
+
+    if (
+        index <
+        section.questions.length - 1
+    ) {
+
+        currentQuestionIndex[currentSection]++;
+
+        renderExam();
+
+        return;
+    }
+
+    if (currentPhase === "pc") {
+
+        if (currentSection === "physics") {
+
+            currentSection = "chemistry";
+
+            currentQuestionIndex.chemistry = 0;
+
+            renderExam();
+
+            return;
+        }
+
+        if (currentSection === "chemistry") {
+
+            startMathematicsPhase();
+
+            return;
+        }
+    }
+
+    if (currentPhase === "math") {
+
+        submitTest();
+    }
 }
 
-// ======================================================
-// MARK FOR REVIEW
-// ======================================================
 
 function markForReview() {
 
@@ -853,20 +996,14 @@ function markForReview() {
     const index =
         currentQuestionIndex[currentSection];
 
-    const question =
-        section.questions[index];
+    section.marked[index] =
+        !section.marked[index];
 
-    section.marked[question.id] =
-        !section.marked[question.id];
-
-    renderCETExam();
+    renderExam();
 }
 
-// ======================================================
-// CLEAR RESPONSE
-// ======================================================
 
-function clearCETResponse() {
+function clearResponse() {
 
     const section =
         currentTest.sections[currentSection];
@@ -874,71 +1011,79 @@ function clearCETResponse() {
     const index =
         currentQuestionIndex[currentSection];
 
-    const question =
-        section.questions[index];
+    section.answers[index] = null;
 
-    delete section.answers[question.id];
-
-    renderCETExam();
+    renderExam();
 }
 
-// ======================================================
-// TIMER
-// ======================================================
+
+/* =========================================================
+   SUBJECT SWITCHING
+========================= */
+
+function switchExamSection(section) {
+
+    if (
+        currentPhase === "pc" &&
+        (section === "physics" ||
+            section === "chemistry")
+    ) {
+
+        currentSection = section;
+
+        renderExam();
+
+        return;
+    }
+
+    if (
+        currentPhase === "math" &&
+        section === "mathematics"
+    ) {
+
+        currentSection = "mathematics";
+
+        renderExam();
+
+        return;
+    }
+}
+
+
+/* =========================================================
+   TIMER
+========================= */
 
 function startTimer() {
 
     stopTimer();
 
-    timerInterval = setInterval(() => {
+    updateTimerDisplay();
 
-        remainingSeconds--;
+    timerInterval =
+        setInterval(function () {
 
-        updateTimerDisplay();
+            remainingSeconds--;
 
-        if (remainingSeconds <= 0) {
+            updateTimerDisplay();
 
-            stopTimer();
+            if (remainingSeconds <= 0) {
 
-            if (currentPhase === "pc") {
+                stopTimer();
 
-                startMathematicsPhase();
+                if (currentPhase === "pc") {
 
-            } else {
+                    startMathematicsPhase();
 
-                submitMockTest(true);
+                } else {
 
+                    submitTest(true);
+                }
             }
 
-        }
-
-    }, 1000);
+        }, 1000);
 }
 
-// ======================================================
-// UPDATE TIMER
-// ======================================================
-
-function updateTimerDisplay() {
-
-    const timer =
-        document.getElementById("timer");
-
-    if (!timer) return;
-
-    const minutes =
-        Math.floor(remainingSeconds / 60);
-
-    const seconds =
-        remainingSeconds % 60;
-
-    timer.textContent =
-        `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-}
-
-// ======================================================
-// STOP TIMER
-// ======================================================
 
 function stopTimer() {
 
@@ -947,13 +1092,27 @@ function stopTimer() {
         clearInterval(timerInterval);
 
         timerInterval = null;
-
     }
 }
 
-// ======================================================
-// MOVE TO MATHEMATICS
-// ======================================================
+
+function updateTimerDisplay() {
+
+    const timer =
+        document.getElementById("timer");
+
+    if (timer) {
+        timer.textContent =
+            formatTime(
+                Math.max(0, remainingSeconds)
+            );
+    }
+}
+
+
+/* =========================================================
+   MATHEMATICS PHASE
+========================= */
 
 function startMathematicsPhase() {
 
@@ -965,367 +1124,531 @@ function startMathematicsPhase() {
 
     remainingSeconds = 90 * 60;
 
-    renderCETExam();
+    alert(
+        "Physics + Chemistry phase is complete.\n\nMathematics phase starts now.\n\nYou have 90 minutes."
+    );
+
+    renderExam();
 
     startTimer();
 }
 
-// ======================================================
-// SUBMIT MOCK
-// ======================================================
 
-function submitMockTest(autoSubmit = false) {
+/* =========================================================
+   SUBMIT TEST
+========================= */
+
+function submitTest(autoSubmit = false) {
+
+    if (!currentTest) {
+        return;
+    }
 
     if (!autoSubmit) {
 
-        const confirmSubmit =
+        const confirmed =
             confirm(
                 "Are you sure you want to submit the test?"
             );
 
-        if (!confirmSubmit) return;
-
+        if (!confirmed) {
+            return;
+        }
     }
 
     stopTimer();
 
-    showMockResult();
+    showResult();
+
+    recordStudyActivity();
 }
 
-// ======================================================
-// MOCK RESULT
-// ======================================================
 
-function showMockResult() {
+/* =========================================================
+   RESULTS
+========================= */
 
-    let result = {
+function calculateResults() {
 
-        physics: {
-            correct: 0,
-            wrong: 0,
-            unanswered: 0,
-            marks: 0
-        },
+    let totalCorrect = 0;
+    let totalWrong = 0;
+    let totalUnanswered = 0;
 
-        chemistry: {
-            correct: 0,
-            wrong: 0,
-            unanswered: 0,
-            marks: 0
-        },
+    let score = 0;
 
-        mathematics: {
-            correct: 0,
-            wrong: 0,
-            unanswered: 0,
-            marks: 0
-        }
+    const subjectResults = {};
 
-    };
+    Object.keys(currentTest.sections).forEach(sectionKey => {
 
+        const section =
+            currentTest.sections[sectionKey];
 
-    Object.keys(currentTest.sections).forEach(
-        subject => {
+        let correct = 0;
+        let wrong = 0;
+        let unanswered = 0;
 
-            const section =
-                currentTest.sections[subject];
+        section.questions.forEach((question, index) => {
 
-            section.questions.forEach(
-                question => {
+            const answer =
+                section.answers[index];
 
-                    const answer =
-                        section.answers[question.id];
+            if (answer === null) {
 
-                    if (answer === undefined) {
+                unanswered++;
 
-                        result[subject].unanswered++;
+            } else if (
+                answer === question.answer
+            ) {
 
-                    }
-                    else if (
-                        answer === question.answer
-                    ) {
+                correct++;
 
-                        result[subject].correct++;
-
-                        result[subject].marks +=
-                            subject === "mathematics"
-                                ? 2
-                                : 1;
-
-                    }
-                    else {
-
-                        result[subject].wrong++;
-
-                    }
-
+                if (sectionKey === "mathematics") {
+                    score += 2;
+                } else {
+                    score += 1;
                 }
-            );
 
-        }
+            } else {
+
+                wrong++;
+            }
+        });
+
+        totalCorrect += correct;
+        totalWrong += wrong;
+        totalUnanswered += unanswered;
+
+        subjectResults[
+            section.subject
+        ] = {
+            correct,
+            wrong,
+            unanswered,
+            answered: correct + wrong
+        };
+    });
+
+    const totalQuestions = 150;
+
+    const answered =
+        totalCorrect + totalWrong;
+
+    const accuracy =
+        answered > 0
+            ? Math.round(
+                (totalCorrect / answered) * 100
+            )
+            : 0;
+
+    return {
+        score,
+        totalCorrect,
+        totalWrong,
+        totalUnanswered,
+        totalQuestions,
+        answered,
+        accuracy,
+        subjectResults
+    };
+}
+
+
+function showResult() {
+
+    const result =
+        calculateResults();
+
+    updateStats(
+        result.totalCorrect,
+        result.totalWrong,
+        result.answered,
+        result.subjectResults
     );
 
+    updateTestCount();
 
-    const totalMarks =
-        result.physics.marks +
-        result.chemistry.marks +
-        result.mathematics.marks;
+    const stats = getStats();
 
-    const totalCorrect =
-        result.physics.correct +
-        result.chemistry.correct +
-        result.mathematics.correct;
+    stats.mockTests.push({
 
-    const totalWrong =
-        result.physics.wrong +
-        result.chemistry.wrong +
-        result.mathematics.wrong;
+        id: currentTest.id,
 
-    const totalUnanswered =
-        result.physics.unanswered +
-        result.chemistry.unanswered +
-        result.mathematics.unanswered;
+        title: currentTest.title,
+
+        score: result.score,
+
+        correct: result.totalCorrect,
+
+        wrong: result.totalWrong,
+
+        unanswered: result.totalUnanswered,
+
+        accuracy: result.accuracy,
+
+        date: new Date().toISOString()
+    });
+
+    saveStats(stats);
+
+    document.getElementById("resultTestName").textContent =
+        currentTest.title;
+
+    document.getElementById("score").textContent =
+        result.score + " / 200";
+
+    document.getElementById("correct").textContent =
+        result.totalCorrect;
+
+    document.getElementById("wrong").textContent =
+        result.totalWrong;
+
+    document.getElementById("unanswered").textContent =
+        result.totalUnanswered;
+
+    document.getElementById("resultAccuracy").textContent =
+        result.accuracy + "%";
+
+    document.getElementById("review").style.display =
+        "none";
+
+    showPage("result");
+}
 
 
-    const percentage =
-        ((totalMarks / 200) * 100).toFixed(2);
+/* =========================================================
+   ANSWER REVIEW
+========================= */
 
+function showReview() {
 
-    document.getElementById("app").innerHTML = `
+    const container =
+        document.getElementById("reviewList");
 
-        <div class="mock-result">
+    container.innerHTML = "";
 
-            <h1>Mock Test Result</h1>
+    Object.keys(currentTest.sections).forEach(sectionKey => {
 
-            <div class="total-score">
+        const section =
+            currentTest.sections[sectionKey];
 
-                <h2>${totalMarks} / 200</h2>
+        const heading =
+            document.createElement("h3");
+
+        heading.textContent =
+            section.subject;
+
+        container.appendChild(heading);
+
+        section.questions.forEach((question, index) => {
+
+            const userAnswer =
+                section.answers[index];
+
+            const item =
+                document.createElement("div");
+
+            item.className =
+                "review-item";
+
+            let status = "";
+            let statusClass = "";
+
+            if (userAnswer === null) {
+
+                status = "Unanswered";
+
+                statusClass = "unanswered";
+
+            } else if (
+                userAnswer === question.answer
+            ) {
+
+                status = "Correct";
+
+                statusClass = "correct";
+
+            } else {
+
+                status = "Wrong";
+
+                statusClass = "wrong";
+            }
+
+            const userText =
+                userAnswer === null
+                    ? "Not answered"
+                    : question.options[userAnswer];
+
+            const correctText =
+                question.options[question.answer];
+
+            item.innerHTML = `
+                <div class="review-question">
+                    <strong>
+                        Q${index + 1}. ${question.question}
+                    </strong>
+
+                    <span class="${statusClass}">
+                        ${status}
+                    </span>
+                </div>
 
                 <p>
-                    ${percentage}%
+                    Your answer:
+                    ${userText}
                 </p>
 
-            </div>
+                <p>
+                    Correct answer:
+                    ${correctText}
+                </p>
 
+                <p>
+                    ${question.explanation || ""}
+                </p>
+            `;
 
-            <div class="result-summary">
+            container.appendChild(item);
+        });
+    });
 
-                <div>
-                    <strong>${totalCorrect}</strong>
-                    <span>Correct</span>
-                </div>
+    document.getElementById("review").style.display =
+        "block";
 
-                <div>
-                    <strong>${totalWrong}</strong>
-                    <span>Wrong</span>
-                </div>
-
-                <div>
-                    <strong>${totalUnanswered}</strong>
-                    <span>Unanswered</span>
-                </div>
-
-            </div>
-
-
-            <h2>Subject-wise Performance</h2>
-
-
-            <div class="subject-result">
-
-                <div>
-
-                    <h3>Physics</h3>
-
-                    <p>
-                        Correct:
-                        ${result.physics.correct}
-                    </p>
-
-                    <p>
-                        Wrong:
-                        ${result.physics.wrong}
-                    </p>
-
-                    <p>
-                        Unanswered:
-                        ${result.physics.unanswered}
-                    </p>
-
-                    <strong>
-                        ${result.physics.marks} / 50
-                    </strong>
-
-                </div>
-
-
-                <div>
-
-                    <h3>Chemistry</h3>
-
-                    <p>
-                        Correct:
-                        ${result.chemistry.correct}
-                    </p>
-
-                    <p>
-                        Wrong:
-                        ${result.chemistry.wrong}
-                    </p>
-
-                    <p>
-                        Unanswered:
-                        ${result.chemistry.unanswered}
-                    </p>
-
-                    <strong>
-                        ${result.chemistry.marks} / 50
-                    </strong>
-
-                </div>
-
-
-                <div>
-
-                    <h3>Mathematics</h3>
-
-                    <p>
-                        Correct:
-                        ${result.mathematics.correct}
-                    </p>
-
-                    <p>
-                        Wrong:
-                        ${result.mathematics.wrong}
-                    </p>
-
-                    <p>
-                        Unanswered:
-                        ${result.mathematics.unanswered}
-                    </p>
-
-                    <strong>
-                        ${result.mathematics.marks} / 100
-                    </strong>
-
-                </div>
-
-            </div>
-
-
-            <div class="result-buttons">
-
-                <button onclick="showMockTests()">
-                    Take Another Mock
-                </button>
-
-                <button onclick="showDashboard()">
-                    Dashboard
-                </button>
-
-            </div>
-
-        </div>
-    `;
+    document.getElementById("review").scrollIntoView({
+        behavior: "smooth"
+    });
 }
 
-// ======================================================
-// PYQ
-// ======================================================
 
-function showPYQTests() {
+/* =========================================================
+   PYQ
+========================= */
 
-    stopTimer();
+function showPYQ() {
 
-    const app =
-        document.getElementById("app");
-
-    app.innerHTML = `
-
-        <div class="page">
-
-            <button onclick="showDashboard()">
-                ← Back
-            </button>
-
-            <h1>MHT-CET PYQ Tests</h1>
-
-            <p>
-                Previous-year question tests will appear here.
-            </p>
-
-            <div class="pyq-grid">
-
-                ${pyqTests.map(test => `
-
-                    <div class="pyq-card">
-
-                        <h3>
-                            MHT-CET ${test.year}
-                        </h3>
-
-                        <p>
-                            Full Paper
-                        </p>
-
-                        <button
-                            onclick="startPYQ(${test.id})"
-                        >
-                            Start PYQ
-                        </button>
-
-                    </div>
-
-                `).join("")}
-
-            </div>
-
-        </div>
-    `;
+    showPage("pyq");
 }
 
-function startPYQ(id) {
+
+function openPYQYear(year) {
+
+    const pyq =
+        pyqTests.find(
+            test => Number(test.year) === Number(year)
+        );
+
+    if (
+        !pyq ||
+        !pyq.questions ||
+        pyq.questions.length === 0
+    ) {
+
+        alert(
+            `${year} PYQ questions have not been added yet.\n\nOnly verified PYQs should be added here.`
+        );
+
+        return;
+    }
 
     alert(
-        "This PYQ test is ready for verified PYQ questions to be added."
+        `${year} PYQ test is ready to start.`
     );
 }
 
-// ======================================================
-// PERFORMANCE
-// ======================================================
+
+/* =========================================================
+   INSTRUCTIONS
+========================= */
+
+function showInstructions() {
+
+    showPage("instructions");
+}
+
+
+function startExam() {
+
+    showMockTests();
+
+    setTimeout(function () {
+
+        if (mockTests.length > 0) {
+
+            startCETMock(mockTests[0].id);
+
+        } else {
+
+            startCETMock("MOCK-01");
+        }
+
+    }, 100);
+}
+
+
+/* =========================================================
+   PERFORMANCE
+========================= */
 
 function showPerformance() {
 
-    stopTimer();
+    showPage("performance");
 
-    document.getElementById("app").innerHTML = `
+    const stats = getStats();
 
-        <div class="page">
+    document.getElementById(
+        "performanceQuestions"
+    ).textContent =
+        stats.questions;
 
-            <button onclick="showDashboard()">
-                ← Back
-            </button>
+    document.getElementById(
+        "performanceCorrect"
+    ).textContent =
+        stats.correct;
 
-            <h1>Performance</h1>
+    document.getElementById(
+        "performanceWrong"
+    ).textContent =
+        stats.wrong;
 
-            <div class="performance-card">
+    const accuracy =
+        stats.questions > 0
+            ? Math.round(
+                (stats.correct / stats.questions) * 100
+            )
+            : 0;
 
-                <h2>Your Performance</h2>
+    document.getElementById(
+        "performanceAccuracy"
+    ).textContent =
+        accuracy + "%";
 
-                <p>
-                    Mock-test performance tracking will appear here
-                    after you complete tests.
-                </p>
-
-            </div>
-
-        </div>
-    `;
+    renderSubjectPerformance();
 }
 
-// ======================================================
-// START DASHBOARD
-// ======================================================
 
-showDashboard();
+function renderSubjectPerformance() {
+
+    const container =
+        document.getElementById(
+            "subjectPerformanceList"
+        );
+
+    container.innerHTML = "";
+
+    const stats = getStats();
+
+    ["Physics", "Chemistry", "Mathematics"]
+        .forEach(subject => {
+
+            const data =
+                stats.subject[subject] || {
+                    questions: 0,
+                    correct: 0
+                };
+
+            const accuracy =
+                data.questions > 0
+                    ? Math.round(
+                        (data.correct /
+                            data.questions) *
+                        100
+                    )
+                    : 0;
+
+            const item =
+                document.createElement("div");
+
+            item.className =
+                "subject-performance-item";
+
+            item.innerHTML = `
+                <h3>${subject}</h3>
+
+                <p>
+                    Questions Attempted:
+                    <strong>${data.questions}</strong>
+                </p>
+
+                <p>
+                    Correct:
+                    <strong>${data.correct}</strong>
+                </p>
+
+                <p>
+                    Accuracy:
+                    <strong>${accuracy}%</strong>
+                </p>
+            `;
+
+            container.appendChild(item);
+        });
+}
+
+
+/* =========================================================
+   INITIALIZE
+========================= */
+
+function initializePortal() {
+
+    updateDashboardStats();
+
+    showPage("home");
+}
+
+
+/* =========================================================
+   MAKE FUNCTIONS AVAILABLE TO HTML
+========================= */
+
+window.showPractice = showPractice;
+window.showMockTests = showMockTests;
+window.showPYQ = showPYQ;
+window.showPerformance = showPerformance;
+window.showInstructions = showInstructions;
+
+window.goHome = goHome;
+
+window.selectSubject = selectSubject;
+window.backToSubjects = backToSubjects;
+window.selectChapter = selectChapter;
+window.backToChapters = backToChapters;
+window.startChapterPractice = startChapterPractice;
+window.backToDifficulty = backToDifficulty;
+
+window.previousPracticeQuestion =
+    previousPracticeQuestion;
+
+window.nextPracticeQuestion =
+    nextPracticeQuestion;
+
+window.startExam = startExam;
+
+window.previousQuestion =
+    previousQuestion;
+
+window.nextQuestion =
+    nextQuestion;
+
+window.markForReview =
+    markForReview;
+
+window.clearResponse =
+    clearResponse;
+
+window.submitTest =
+    submitTest;
+
+window.showReview =
+    showReview;
+
+window.openPYQYear =
+    openPYQYear;
+
+
+/* =========================================================
+   START
+========================= */
+
+initializePortal();
